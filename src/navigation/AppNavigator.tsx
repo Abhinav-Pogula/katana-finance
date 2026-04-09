@@ -5,6 +5,8 @@ import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useResponsive } from '../hooks/useResponsive';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Screens
 import DashboardScreen from '../screens/DashboardScreen';
@@ -32,6 +34,9 @@ const CustomTabButton = ({ children, onPress }: any) => (
 
 const MainTabs = () => {
   const { colors } = useTheme();
+  const { s, wp } = useResponsive();
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -39,28 +44,30 @@ const MainTabs = () => {
         tabBarStyle: {
           backgroundColor: colors.tabBar,
           borderTopWidth: 0,
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 8,
-          paddingHorizontal: 8,
+          height: s(64) + (insets.bottom > 0 ? insets.bottom / 2 : 0),
+          paddingBottom: insets.bottom > 0 ? insets.bottom : s(8),
+          paddingTop: s(8),
+          paddingHorizontal: wp(2),
           position: 'absolute',
           elevation: 0,
-          borderRadius: 32,
-          marginHorizontal: 16,
-          marginBottom: 24,
+          borderRadius: s(32),
+          marginHorizontal: wp(4),
+          marginBottom: insets.bottom > 0 ? insets.bottom + s(8) : s(24),
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 10 },
           shadowOpacity: 0.3,
           shadowRadius: 20,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.05)',
         },
         tabBarItemStyle: {
           justifyContent: 'center',
           alignItems: 'center',
         },
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: s(10),
           fontWeight: '700',
-          marginTop: 4,
+          marginTop: s(4),
         },
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: '#666666',

@@ -12,17 +12,17 @@ import { PieChart, BarChart } from 'react-native-gifted-charts';
 import { useTheme } from '../context/ThemeContext';
 import { useTransactions } from '../context/TransactionContext';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useResponsive } from '../hooks/useResponsive';
 import CrumpledPaper from '../components/CrumpledPaper';
 import SummaryCard from '../components/SummaryCard';
 import { Transaction } from '../utils/storage';
 import dayjs from 'dayjs';
 
-const { width } = Dimensions.get('window');
-
 const AnalyticsScreen = () => {
   const { colors, isDark } = useTheme();
   const { transactions, loading, refreshTransactions } = useTransactions();
   const navigation = useNavigation<any>();
+  const { width, s, wp } = useResponsive();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -100,7 +100,14 @@ const AnalyticsScreen = () => {
 
     // Prepare Bar Data (Sorted by time)
     const barData: any[] = [];
-    months.forEach(m => {
+    
+    // Calculate responsive bar dimensions to avoid overflow
+    const chartContentWidth = width - wp(12) - 40; // Horizontal padding + Y-axis allowance
+    const totalBars = months.length * 2;
+    const dynamicBarWidth = (chartContentWidth / totalBars) * 0.6;
+    const dynamicSpacing = (chartContentWidth / months.length) * 0.4;
+
+    months.forEach((m, idx) => {
       const data = monthlyData[m];
       
       // Income Bar - gradient green
@@ -110,11 +117,11 @@ const AnalyticsScreen = () => {
         frontColor: colors.income,
         showGradient: true,
         gradientColor: '#69F0AE',
-        spacing: 6, // Very small gap between income/expense pair
-        labelTextStyle: { color: colors.text, fontSize: 12, fontWeight: '800', width: 44, textAlign: 'center' }, // Bold X-axis
-        topRadius: 6,
+        spacing: s(4), // Minimal gap between income/expense
+        labelTextStyle: { color: colors.text, fontSize: s(10), fontWeight: '800', width: s(40), textAlign: 'center' },
+        topRadius: s(6),
         topLabelComponent: data.income > 0 ? () => (
-          <Text style={{fontSize: 9, color: colors.secondaryText, marginBottom: 2, fontWeight: '600'}}>${data.income.toFixed(0)}</Text>
+          <Text style={{fontSize: s(8), color: colors.secondaryText, marginBottom: 2, fontWeight: '600'}}>${data.income.toFixed(0)}</Text>
         ) : undefined,
       });
       
@@ -124,10 +131,10 @@ const AnalyticsScreen = () => {
         frontColor: colors.expense,
         showGradient: true,
         gradientColor: '#FF6B6B',
-        spacing: 36, // Large gap before the next month group
-        topRadius: 6,
+        spacing: dynamicSpacing, // Dynamic spacing to fill chart width perfectly
+        topRadius: s(6),
         topLabelComponent: data.expense > 0 ? () => (
-          <Text style={{fontSize: 9, color: colors.secondaryText, marginBottom: 2, fontWeight: '600'}}>${data.expense.toFixed(0)}</Text>
+          <Text style={{fontSize: s(8), color: colors.secondaryText, marginBottom: 2, fontWeight: '600'}}>${data.expense.toFixed(0)}</Text>
         ) : undefined,
       });
     });
@@ -162,8 +169,8 @@ const AnalyticsScreen = () => {
   return (
     <CrumpledPaper>
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <Text style={[styles.title, { color: colors.text }]}>Analytics</Text>
+        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: wp(6), paddingTop: s(16) }]} showsVerticalScrollIndicator={false}>
+          <Text style={[styles.title, { color: colors.text, fontSize: s(28), marginBottom: s(24) }]}>Analytics</Text>
 
           <View style={styles.summaryContainer}>
             <SummaryCard 
@@ -184,8 +191,8 @@ const AnalyticsScreen = () => {
           </View>
 
           {/* Pie Chart: Spending by Category */}
-          <View style={[styles.chartCard, dynamicCardStyle]}>
-            <Text style={[styles.chartTitle, { color: colors.text, textAlign: 'center' }]}>Spending Breakdown</Text>
+          <View style={[styles.chartCard, dynamicCardStyle, { borderRadius: s(24), padding: s(16), marginBottom: s(24) }]}>
+            <Text style={[styles.chartTitle, { color: colors.text, textAlign: 'center', fontSize: s(16), marginBottom: s(20) }]}>Spending Breakdown</Text>
             
             {/* Added container glow for a futuristic feel */}
             <View style={[styles.pieContainer, {
@@ -194,37 +201,38 @@ const AnalyticsScreen = () => {
               shadowOpacity: !isDark ? 0.05 : 0.35,
               shadowRadius: !isDark ? 15 : 25,
               elevation: !isDark ? 4 : 15,
-              height: 250
+              height: s(220),
+              marginBottom: s(20)
             }]}>
               {stats.pieData.length > 0 ? (
                 <PieChart
                   data={stats.pieData}
                   donut
-                  radius={110}          // Much larger base scale
-                  innerRadius={75}      // Leaves a thick 35pt ring and large center
+                  radius={s(90)}          
+                  innerRadius={s(65)}      
                   innerCircleColor={!isDark ? '#FFF' : colors.cardBackground}
                   centerLabelComponent={() => (
                     <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 26, color: colors.text, fontWeight: '900' }}>
+                      <Text style={{ fontSize: s(20), color: colors.text, fontWeight: '900' }}>
                         ${stats.totalExpense.toFixed(0)}
                       </Text>
                     </View>
                   )}
-                  strokeWidth={0}       // Stripping stroke ensures absolute edge-to-edge vibrant colors
+                  strokeWidth={0}       
                   focusOnPress
                 />
               ) : (
-                <Text style={{color: colors.secondaryText}}>No expenses this month</Text>
+                <Text style={{color: colors.secondaryText, fontSize: s(14)}}>No expenses this month</Text>
               )}
             </View>
             
-            <View style={styles.legendContainer}>
+            <View style={[styles.legendContainer, { paddingHorizontal: s(8) }]}>
               {stats.pieData.map((item, index) => (
-                <View key={index} style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                <View key={index} style={[styles.legendItem, { marginBottom: s(12), paddingRight: s(8) }]}>
+                  <View style={[styles.legendDot, { backgroundColor: item.color, width: s(10), height: s(10), borderRadius: s(5), marginRight: s(8) }]} />
                   <View style={{flex: 1}}>
-                    <Text style={[styles.legendText, { color: colors.secondaryText }]}>{item.text}</Text>
-                    <Text style={[styles.legendValue, { color: colors.text }]}>${item.value.toFixed(0)}</Text>
+                    <Text style={[styles.legendText, { color: colors.secondaryText, fontSize: s(12) }]} numberOfLines={1}>{item.text}</Text>
+                    <Text style={[styles.legendValue, { color: colors.text, fontSize: s(13) }]}>${item.value.toFixed(0)}</Text>
                   </View>
                 </View>
               ))}
@@ -232,29 +240,29 @@ const AnalyticsScreen = () => {
           </View>
 
           {/* Bar Chart: Monthly Comparison */}
-          <View style={[styles.chartCard, dynamicCardStyle]}>
-            <View style={{ marginBottom: 20 }}>
-              <Text style={[styles.chartTitle, { color: colors.text, textAlign: 'left', marginBottom: 12 }]}>Income vs Expense</Text>
+          <View style={[styles.chartCard, dynamicCardStyle, { borderRadius: s(24), padding: s(20), marginBottom: s(24) }]}>
+            <View style={{ marginBottom: s(20) }}>
+              <Text style={[styles.chartTitle, { color: colors.text, textAlign: 'left', marginBottom: s(12), fontSize: s(16) }]}>Income vs Expense</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
-                <View style={[styles.legendItem, { width: 'auto', marginRight: 20, marginBottom: 4 }]}>
-                  <View style={[styles.legendDot, { backgroundColor: colors.income }]} />
-                  <Text style={[styles.legendText, { color: colors.secondaryText }]}>Income</Text>
+                <View style={[styles.legendItem, { width: 'auto', marginRight: s(20), marginBottom: s(4) }]}>
+                  <View style={[styles.legendDot, { backgroundColor: colors.income, width: s(12), height: s(12), borderRadius: s(6), marginRight: s(8) }]} />
+                  <Text style={[styles.legendText, { color: colors.secondaryText, fontSize: s(14) }]}>Income</Text>
                 </View>
-                <View style={[styles.legendItem, { width: 'auto', marginRight: 0, marginBottom: 4 }]}>
-                  <View style={[styles.legendDot, { backgroundColor: colors.expense }]} />
-                  <Text style={[styles.legendText, { color: colors.secondaryText }]}>Expense</Text>
+                <View style={[styles.legendItem, { width: 'auto', marginRight: 0, marginBottom: s(4) }]}>
+                  <View style={[styles.legendDot, { backgroundColor: colors.expense, width: s(12), height: s(12), borderRadius: s(6), marginRight: s(8) }]} />
+                  <Text style={[styles.legendText, { color: colors.secondaryText, fontSize: s(14) }]}>Expense</Text>
                 </View>
               </View>
             </View>
             
-            <View style={styles.barContainer}>
+            <View style={[styles.barContainer, { marginLeft: -s(20) }]}>
               <BarChart
                 data={stats.barData}
-                barWidth={18}
-                initialSpacing={15}
+                barWidth={s(18)}
+                initialSpacing={s(15)}
                 noOfSections={4}
-                height={220}
-                dashGap={4}
+                height={s(200)}
+                dashGap={s(4)}
                 backgroundColor="transparent"
                 yAxisThickness={0}
                 xAxisThickness={0}
@@ -262,13 +270,13 @@ const AnalyticsScreen = () => {
                 rulesType="dashed"
                 rulesColor={colors.divider} 
                 yAxisLabelPrefix="$"
-                yAxisTextStyle={{ color: colors.secondaryText, fontSize: 11, fontWeight: '700' }}
+                yAxisTextStyle={{ color: colors.secondaryText, fontSize: s(11), fontWeight: '700' }}
                 isAnimated
               />
             </View>
           </View>
           
-          <View style={{ height: 100 }} />
+          <View style={{ height: s(100) }} />
         </ScrollView>
       </SafeAreaView>
     </CrumpledPaper>
@@ -284,41 +292,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
   },
   title: {
-    fontSize: 28,
     fontWeight: '800',
-    marginBottom: 20,
   },
   summaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   chartCard: {
-    padding: 20,
-    borderRadius: 24,
     borderWidth: 1,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
   },
   chartTitle: {
-    fontSize: 16,
     fontWeight: '700',
-    marginBottom: 20,
   },
   pieContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 180,
   },
   legendContainer: {
-    marginTop: 20,
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
@@ -327,30 +319,15 @@ const styles = StyleSheet.create({
     width: '48%',
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
   },
   legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 10,
   },
   legendText: {
-    fontSize: 14,
-    marginBottom: 2,
   },
   legendValue: {
-    fontSize: 15,
     fontWeight: '700',
   },
   barContainer: {
-    marginTop: 10,
-    marginLeft: -20,
-  },
-  barLegend: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
   },
 });
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useResponsive } from '../hooks/useResponsive';
 
 export const CATEGORIES = [
   { id: 'Food', name: 'Food', icon: 'fast-food-outline', color: '#2ECC71' },
@@ -20,26 +21,28 @@ interface CategoryPickerProps {
 
 const CategoryPicker: React.FC<CategoryPickerProps> = ({ selectedId, onSelect }) => {
   const { colors, isDark } = useTheme();
+  const { s } = useResponsive();
 
   return (
-    <View style={styles.container}>
-      <Text style={[styles.label, { color: colors.secondaryText }]}>Select Category</Text>
+    <View style={[styles.container, { marginVertical: s(16) }]}>
+      <Text style={[styles.label, { color: colors.secondaryText, fontSize: s(12), marginBottom: s(12) }]}>Select Category</Text>
       <View style={styles.grid}>
         {CATEGORIES.map((cat) => (
           <TouchableOpacity
             key={cat.id}
             style={[
               styles.categoryItem,
+              { borderRadius: s(16), padding: s(8) },
               selectedId === cat.id && { backgroundColor: cat.color + '20', borderColor: cat.color }
             ]}
             onPress={() => onSelect(cat)}
           >
-            <View style={[styles.iconCircle, { backgroundColor: cat.color + '15' }]}>
-              <Ionicons name={cat.icon as any} size={24} color={cat.color} />
+            <View style={[styles.iconCircle, { backgroundColor: cat.color + '15', width: s(44), height: s(44), borderRadius: s(22), marginBottom: s(6) }]}>
+              <Ionicons name={cat.icon as any} size={s(22)} color={cat.color} />
             </View>
             <Text style={[
               styles.categoryName, 
-              { color: selectedId === cat.id ? cat.color : colors.text }
+              { color: selectedId === cat.id ? cat.color : colors.text, fontSize: s(10) }
             ]}>
               {cat.name}
             </Text>
@@ -52,14 +55,11 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({ selectedId, onSelect })
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 16,
   },
   label: {
-    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 12,
   },
   grid: {
     flexDirection: 'row',
@@ -70,23 +70,16 @@ const styles = StyleSheet.create({
     width: '30%',
     aspectRatio: 1,
     margin: '1.6%',
-    borderRadius: 16,
     borderWidth: 1,
     borderColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 8,
   },
   iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
   },
   categoryName: {
-    fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
   },

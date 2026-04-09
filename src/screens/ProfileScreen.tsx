@@ -14,6 +14,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useTransactions } from '../context/TransactionContext';
 import { useAuth } from '../context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
+import { useResponsive } from '../hooks/useResponsive';
 import CrumpledPaper from '../components/CrumpledPaper';
 import { clearAllData, Transaction } from '../utils/storage';
 import dayjs from 'dayjs';
@@ -22,6 +23,7 @@ const ProfileScreen = () => {
   const { colors, isDark, toggleTheme } = useTheme();
   const { transactions, refreshTransactions } = useTransactions();
   const { userName } = useAuth();
+  const { s, wp } = useResponsive();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -71,41 +73,41 @@ const ProfileScreen = () => {
   };
 
   const StatItem = ({ label, value, color }: { label: string, value: string, color: string }) => (
-    <View style={[styles.statItem, { borderBottomColor: colors.divider }]}>
-      <Text style={[styles.statLabel, { color: colors.secondaryText }]}>{label}</Text>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
+    <View style={[styles.statItem, { borderBottomColor: colors.divider, paddingVertical: s(12) }]}>
+      <Text style={[styles.statLabel, { color: colors.secondaryText, fontSize: s(15) }]}>{label}</Text>
+      <Text style={[styles.statValue, { color, fontSize: s(15) }]}>{value}</Text>
     </View>
   );
 
   return (
     <CrumpledPaper>
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: wp(6) }]}>
+          <Text style={[styles.title, { color: colors.text, fontSize: s(28), marginBottom: s(24) }]}>Settings</Text>
 
-          <View style={styles.profileHeader}>
-            <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
-              <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
+          <View style={[styles.profileHeader, { marginBottom: s(32) }]}>
+            <View style={[styles.avatar, { backgroundColor: colors.accent, width: s(64), height: s(64), borderRadius: s(32) }]}>
+              <Text style={[styles.avatarText, { fontSize: s(24) }]}>{userName.charAt(0).toUpperCase()}</Text>
             </View>
-            <View style={styles.profileInfo}>
-              <Text style={[styles.userName, { color: colors.text }]}>{userName}</Text>
-              <Text style={[styles.userStatus, { color: colors.secondaryText }]}>Pro Member</Text>
+            <View style={[styles.profileInfo, { marginLeft: s(16) }]}>
+              <Text style={[styles.userName, { color: colors.text, fontSize: s(20) }]}>{userName}</Text>
+              <Text style={[styles.userStatus, { color: colors.secondaryText, fontSize: s(14) }]}>Pro Member</Text>
             </View>
           </View>
 
-          <View style={[styles.section, { backgroundColor: !isDark ? '#FFF' : colors.cardBackground, borderColor: colors.divider }]}>
-            <Text style={[styles.sectionTitle, { color: colors.secondaryText }]}>Financial Overview</Text>
-            <StatItem label="Total Balance" value={`$${financialStats.totalBalance.toFixed(2)}`} color={colors.text} />
-            <StatItem label="Income (This Month)" value={`$${financialStats.monthlyIncome.toFixed(2)}`} color={colors.income} />
-            <StatItem label="Spending (This Month)" value={`$${financialStats.monthlyExpense.toFixed(2)}`} color={colors.expense} />
+          <View style={[styles.section, { backgroundColor: !isDark ? '#FFF' : colors.cardBackground, borderColor: colors.divider, borderRadius: s(24), padding: s(20), marginBottom: s(24) }]}>
+            <Text style={[styles.sectionTitle, { color: colors.secondaryText, fontSize: s(12), marginBottom: s(16) }]}>Financial Overview</Text>
+            <StatItem label="Total Balance" value={`$${financialStats.totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`} color={colors.text} />
+            <StatItem label="Income (This Month)" value={`$${financialStats.monthlyIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}`} color={colors.income} />
+            <StatItem label="Spending (This Month)" value={`$${financialStats.monthlyExpense.toLocaleString(undefined, { minimumFractionDigits: 2 })}`} color={colors.expense} />
           </View>
 
-          <View style={[styles.section, { backgroundColor: !isDark ? '#FFF' : colors.cardBackground, borderColor: colors.divider }]}>
-            <Text style={[styles.sectionTitle, { color: colors.secondaryText }]}>Preferences</Text>
+          <View style={[styles.section, { backgroundColor: !isDark ? '#FFF' : colors.cardBackground, borderColor: colors.divider, borderRadius: s(24), padding: s(20), marginBottom: s(24) }]}>
+            <Text style={[styles.sectionTitle, { color: colors.secondaryText, fontSize: s(12), marginBottom: s(16) }]}>Preferences</Text>
             <View style={styles.settingRow}>
               <View style={styles.settingLabelGroup}>
-                <Ionicons name={isDark ? "moon" : "sunny"} size={22} color={colors.accent} />
-                <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
+                <Ionicons name={isDark ? "moon" : "sunny"} size={s(22)} color={colors.accent} />
+                <Text style={[styles.settingLabel, { color: colors.text, fontSize: s(16), marginLeft: s(12) }]}>Dark Mode</Text>
               </View>
               <Switch 
                 value={isDark} 
@@ -116,14 +118,14 @@ const ProfileScreen = () => {
           </View>
 
           <TouchableOpacity 
-            style={[styles.clearButton, { borderColor: isDark ? '#B30000' : colors.expense }]}
+            style={[styles.clearButton, { borderColor: isDark ? '#B30000' : colors.expense, height: s(56), borderRadius: s(16) }]}
             onPress={handleClearData}
           >
-            <Ionicons name="trash-outline" size={20} color={isDark ? '#B30000' : colors.expense} />
-            <Text style={[styles.clearButtonText, { color: isDark ? '#B30000' : colors.expense }]}>Clear All Data</Text>
+            <Ionicons name="trash-outline" size={s(20)} color={isDark ? '#B30000' : colors.expense} />
+            <Text style={[styles.clearButtonText, { color: isDark ? '#B30000' : colors.expense, fontSize: s(16), marginLeft: s(8) }]}>Clear All Data</Text>
           </TouchableOpacity>
 
-          <Text style={[styles.versionText, { color: colors.secondaryText }]}>Version 1.0.0</Text>
+          <Text style={[styles.versionText, { color: colors.secondaryText, fontSize: s(12), marginTop: s(32) }]}>Version 1.0.0</Text>
         </ScrollView>
       </SafeAreaView>
     </CrumpledPaper>
@@ -135,68 +137,49 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 100,
   },
   title: {
-    fontSize: 28,
     fontWeight: '800',
-    marginBottom: 24,
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
     color: '#FFF',
-    fontSize: 24,
     fontWeight: '800',
   },
   profileInfo: {
-    marginLeft: 16,
   },
   userName: {
-    fontSize: 20,
     fontWeight: '700',
   },
   userStatus: {
-    fontSize: 14,
     marginTop: 2,
   },
   section: {
-    borderRadius: 24,
-    padding: 20,
     borderWidth: 1,
-    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 16,
   },
   statItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 12,
     borderBottomWidth: 1,
   },
   statLabel: {
-    fontSize: 15,
     fontWeight: '500',
   },
   statValue: {
-    fontSize: 15,
     fontWeight: '700',
   },
   settingRow: {
@@ -209,29 +192,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   settingLabel: {
-    fontSize: 16,
     fontWeight: '600',
-    marginLeft: 12,
   },
   clearButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 56,
-    borderRadius: 16,
     borderWidth: 1,
     borderStyle: 'dashed',
     marginTop: 8,
   },
   clearButtonText: {
-    fontSize: 16,
     fontWeight: '700',
-    marginLeft: 8,
   },
   versionText: {
     textAlign: 'center',
-    marginTop: 32,
-    fontSize: 12,
   },
 });
 

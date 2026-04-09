@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useResponsive } from '../hooks/useResponsive';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface AuthScreenProps {
   onLogin: (name: string) => void;
@@ -20,10 +22,9 @@ interface AuthScreenProps {
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   const { colors, toggleTheme } = useTheme();
+  const { s, wp, hp } = useResponsive();
+  const insets = useSafeAreaInsets();
   
-  // Always force dark mode palette for auth screen if we want it strictly dark
-  // But let's respect the theme if possible, though user explicitly asked for "Dark black background",
-  // so we hardcode the core colors to match the exact requirement, falling back to standard styles.
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   
   // Form State
@@ -57,41 +58,45 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          contentContainerStyle={[styles.scrollContent, { paddingHorizontal: wp(6), paddingVertical: hp(5) }]} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           
           {/* Top Brand Section */}
-          <View style={styles.brandContainer}>
-            <View style={styles.logoBox}>
-              <Text style={styles.logoText}>K</Text>
+          <View style={[styles.brandContainer, { marginBottom: hp(5) }]}>
+            <View style={[styles.logoBox, { width: s(64), height: s(64), borderRadius: s(16), marginBottom: s(20) }]}>
+              <Text style={[styles.logoText, { fontSize: s(40) }]}>K</Text>
             </View>
-            <Text style={styles.appName}>Katana Finance</Text>
-            <Text style={styles.appSubtitle}>Take control of your wealth.</Text>
+            <Text style={[styles.appName, { fontSize: s(28), marginBottom: s(8) }]}>Katana Finance</Text>
+            <Text style={[styles.appSubtitle, { fontSize: s(14) }]}>Take control of your wealth.</Text>
           </View>
 
           {/* Auth Card Container */}
-          <View style={styles.cardContainer}>
-            <Text style={styles.cardTitle}>Get started</Text>
+          <View style={[styles.cardContainer, { borderRadius: s(32), padding: s(24) }]}>
+            <Text style={[styles.cardTitle, { fontSize: s(22), marginBottom: s(24) }]}>Get started</Text>
 
             {/* Toggle Switch */}
-            <View style={styles.toggleContainer}>
+            <View style={[styles.toggleContainer, { padding: s(4), marginBottom: s(32) }]}>
               <TouchableOpacity 
-                style={[styles.toggleButton, activeTab === 'signin' && styles.toggleButtonActive]}
+                style={[styles.toggleButton, { paddingVertical: s(12) }, activeTab === 'signin' && styles.toggleButtonActive]}
                 onPress={() => setActiveTab('signin')}
               >
-                <Text style={[styles.toggleText, activeTab === 'signin' && styles.toggleTextActive]}>
+                <Text style={[styles.toggleText, { fontSize: s(14) }, activeTab === 'signin' && styles.toggleTextActive]}>
                   Sign In
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.toggleButton, activeTab === 'signup' && styles.toggleButtonActive]}
+                style={[styles.toggleButton, { paddingVertical: s(12) }, activeTab === 'signup' && styles.toggleButtonActive]}
                 onPress={() => setActiveTab('signup')}
               >
-                <Text style={[styles.toggleText, activeTab === 'signup' && styles.toggleTextActive]}>
+                <Text style={[styles.toggleText, { fontSize: s(14) }, activeTab === 'signup' && styles.toggleTextActive]}>
                   Sign Up
                 </Text>
               </TouchableOpacity>
@@ -99,10 +104,10 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
 
             {/* Dynamic Form Fields */}
             {activeTab === 'signup' && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Full Name</Text>
+              <View style={[styles.inputGroup, { marginBottom: s(20) }]}>
+                <Text style={[styles.inputLabel, { fontSize: s(13), marginBottom: s(8) }]}>Full Name</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { paddingHorizontal: s(16), paddingVertical: s(14), fontSize: s(15), borderRadius: s(16) }]}
                   placeholder="John Doe"
                   placeholderTextColor="#666"
                   value={fullName}
@@ -112,10 +117,10 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
               </View>
             )}
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email</Text>
+            <View style={[styles.inputGroup, { marginBottom: s(20) }]}>
+              <Text style={[styles.inputLabel, { fontSize: s(13), marginBottom: s(8) }]}>Email</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { paddingHorizontal: s(16), paddingVertical: s(14), fontSize: s(15), borderRadius: s(16) }]}
                 placeholder="you@example.com"
                 placeholderTextColor="#666"
                 value={email}
@@ -125,11 +130,11 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <View style={styles.passwordContainer}>
+            <View style={[styles.inputGroup, { marginBottom: s(20) }]}>
+              <Text style={[styles.inputLabel, { fontSize: s(13), marginBottom: s(8) }]}>Password</Text>
+              <View style={[styles.passwordContainer, { borderRadius: s(16) }]}>
                 <TextInput
-                  style={styles.passwordInput}
+                  style={[styles.passwordInput, { paddingHorizontal: s(16), paddingVertical: s(14), fontSize: s(15) }]}
                   placeholder="••••••••"
                   placeholderTextColor="#666"
                   value={password}
@@ -137,23 +142,23 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#888" />
+                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={s(20)} color="#888" />
                 </TouchableOpacity>
               </View>
             </View>
 
             {activeTab === 'signin' && (
-              <TouchableOpacity style={styles.forgotPasswordContainer}>
-                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+              <TouchableOpacity style={[styles.forgotPasswordContainer, { marginBottom: s(24) }]}>
+                <Text style={[styles.forgotPasswordText, { fontSize: s(13) }]}>Forgot password?</Text>
               </TouchableOpacity>
             )}
 
             {activeTab === 'signup' && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Confirm Password</Text>
-                <View style={styles.passwordContainer}>
+              <View style={[styles.inputGroup, { marginBottom: s(20) }]}>
+                <Text style={[styles.inputLabel, { fontSize: s(13), marginBottom: s(8) }]}>Confirm Password</Text>
+                <View style={[styles.passwordContainer, { borderRadius: s(16) }]}>
                   <TextInput
-                    style={styles.passwordInput}
+                    style={[styles.passwordInput, { paddingHorizontal: s(16), paddingVertical: s(14), fontSize: s(15) }]}
                     placeholder="••••••••"
                     placeholderTextColor="#666"
                     value={confirmPassword}
@@ -161,20 +166,21 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                     secureTextEntry={!showConfirmPassword}
                   />
                   <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
-                    <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#888" />
+                    <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={s(20)} color="#888" />
                   </TouchableOpacity>
                 </View>
               </View>
             )}
 
             {/* Submit Button */}
-            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-              <Text style={styles.submitButtonText}>
+            <TouchableOpacity style={[styles.submitButton, { paddingVertical: s(16), borderRadius: s(100), marginTop: s(12) }]} onPress={handleSubmit}>
+              <Text style={[styles.submitButtonText, { fontSize: s(16) }]}>
                 {activeTab === 'signin' ? 'Sign In' : 'Create Account'}
               </Text>
             </TouchableOpacity>
 
           </View>
+          <View style={{ height: hp(5) }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -189,64 +195,44 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 40,
   },
   brandContainer: {
     alignItems: 'center',
-    marginBottom: 40,
-    marginTop: 20,
   },
   logoBox: {
-    width: 64,
-    height: 64,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
   },
   logoText: {
-    fontSize: 40,
     fontWeight: '900',
     color: '#0D0D0D',
   },
   appName: {
-    fontSize: 28,
     fontWeight: '800',
     color: '#FFFFFF',
-    marginBottom: 8,
     fontFamily: 'NotoSerifJP_900Black',
   },
   appSubtitle: {
-    fontSize: 14,
     color: '#888888',
     fontWeight: '500',
   },
   cardContainer: {
     backgroundColor: '#1A1A1A',
-    borderRadius: 32,
-    padding: 24,
-    paddingTop: 32,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
   cardTitle: {
-    fontSize: 24,
     fontWeight: '800',
     color: '#FFFFFF',
-    marginBottom: 24,
   },
   toggleContainer: {
     flexDirection: 'row',
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 100,
-    padding: 4,
-    marginBottom: 32,
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: 12,
     borderRadius: 100,
     alignItems: 'center',
   },
@@ -254,7 +240,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   toggleText: {
-    fontSize: 14,
     fontWeight: '700',
     color: '#888888',
   },
@@ -262,21 +247,14 @@ const styles = StyleSheet.create({
     color: '#0D0D0D',
   },
   inputGroup: {
-    marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 13,
     fontWeight: '600',
     color: '#CCCCCC',
-    marginBottom: 8,
     marginLeft: 4,
   },
   input: {
     backgroundColor: '#262626',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 15,
     color: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#333333',
@@ -284,16 +262,12 @@ const styles = StyleSheet.create({
   passwordContainer: {
     flexDirection: 'row',
     backgroundColor: '#262626',
-    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#333333',
     alignItems: 'center',
   },
   passwordInput: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 15,
     color: '#FFFFFF',
   },
   eyeButton: {
@@ -301,24 +275,18 @@ const styles = StyleSheet.create({
   },
   forgotPasswordContainer: {
     alignItems: 'flex-end',
-    marginBottom: 24,
     marginTop: -8,
   },
   forgotPasswordText: {
     color: '#888888',
-    fontSize: 13,
     fontWeight: '600',
   },
   submitButton: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 100,
-    paddingVertical: 18,
     alignItems: 'center',
-    marginTop: 12,
   },
   submitButtonText: {
     color: '#0D0D0D',
-    fontSize: 16,
     fontWeight: '800',
   },
 });

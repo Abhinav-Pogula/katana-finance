@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useResponsive } from '../hooks/useResponsive';
 
 interface SummaryCardProps {
   title: string;
@@ -12,6 +13,7 @@ interface SummaryCardProps {
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ title, amount, type, onPress }) => {
   const { colors, isDark } = useTheme();
+  const { s } = useResponsive();
 
   const getIcon = () => {
     switch (type) {
@@ -33,18 +35,25 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, amount, type, onPress 
     <TouchableOpacity 
       style={[
         styles.container, 
-        { backgroundColor: !isDark ? '#FFFFFF' : '#1A1A1A', borderColor: colors.divider }
+        { 
+          backgroundColor: !isDark ? '#FFFFFF' : '#1A1A1A', 
+          borderColor: colors.divider,
+          padding: s(16),
+          borderRadius: s(16),
+          marginHorizontal: s(4),
+          marginBottom: s(12),
+        }
       ]}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
       disabled={!onPress}
     >
-      <View style={[styles.iconContainer, { backgroundColor: getIconColor() + '15' }]}>
-        <Ionicons name={getIcon()} size={24} color={getIconColor()} />
+      <View style={[styles.iconContainer, { backgroundColor: getIconColor() + '15', width: s(48), height: s(48), borderRadius: s(12) }]}>
+        <Ionicons name={getIcon()} size={s(24)} color={getIconColor()} />
       </View>
-      <View style={styles.textContainer}>
-        <Text style={[styles.title, { color: colors.secondaryText }]}>{title}</Text>
-        <Text style={[styles.amount, { color: colors.text }]}>
+      <View style={[styles.textContainer, { marginLeft: s(12) }]}>
+        <Text style={[styles.title, { color: colors.secondaryText, fontSize: s(10) }]}>{title}</Text>
+        <Text style={[styles.amount, { color: colors.text, fontSize: s(16) }]}>
           ${Math.abs(amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
         </Text>
       </View>
@@ -54,33 +63,24 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, amount, type, onPress 
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
     flex: 1,
-    marginHorizontal: 4,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   textContainer: {
-    marginLeft: 12,
+    flex: 1,
   },
   title: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   amount: {
-    fontSize: 16,
     fontWeight: '800',
     marginTop: 2,
   },

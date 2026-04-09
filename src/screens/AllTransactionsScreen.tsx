@@ -13,6 +13,7 @@ import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
 import { useTransactions } from '../context/TransactionContext';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useResponsive } from '../hooks/useResponsive';
 import CrumpledPaper from '../components/CrumpledPaper';
 import TransactionRow from '../components/TransactionRow';
 import SearchField from '../components/SearchField';
@@ -22,6 +23,7 @@ const AllTransactionsScreen = () => {
   const { colors } = useTheme();
   const { transactions, loading, refreshTransactions } = useTransactions();
   const navigation = useNavigation<any>();
+  const { s, wp } = useResponsive();
   const [searchQuery, setSearchQuery] = useState('');
 
   useFocusEffect(
@@ -64,8 +66,8 @@ const AllTransactionsScreen = () => {
       : dayjs(title).format('MMMM D, YYYY');
 
     return (
-      <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
-        <Text style={[styles.sectionTitle, { color: colors.secondaryText }]}>{displayDate}</Text>
+      <View style={[styles.sectionHeader, { backgroundColor: colors.background, paddingVertical: s(12) }]}>
+        <Text style={[styles.sectionTitle, { color: colors.secondaryText, fontSize: s(12) }]}>{displayDate}</Text>
       </View>
     );
   };
@@ -73,14 +75,14 @@ const AllTransactionsScreen = () => {
   return (
     <CrumpledPaper>
       <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
+        <View style={[styles.header, { paddingHorizontal: wp(6), paddingTop: s(16), paddingBottom: s(24) }]}>
+          <View style={[styles.titleRow, { marginBottom: s(20) }]}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={28} color={colors.text} />
+              <Ionicons name="arrow-back" size={s(28)} color={colors.text} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>All Transactions</Text>
+            <Text style={[styles.headerTitle, { color: colors.text, fontSize: s(22) }]}>All Transactions</Text>
             {/* Empty view for flex balance */}
-            <View style={{ width: 44 }} />
+            <View style={{ width: s(44) }} />
           </View>
           
           <SearchField value={searchQuery} onChangeText={setSearchQuery} />
@@ -94,11 +96,11 @@ const AllTransactionsScreen = () => {
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => <TransactionRow {...item} />}
             renderSectionHeader={renderSectionHeader}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, { paddingHorizontal: wp(6), paddingBottom: s(40) }]}
             stickySectionHeadersEnabled={true}
             ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyText, { color: colors.secondaryText }]}>
+              <View style={[styles.emptyContainer, { marginTop: s(100), paddingHorizontal: s(40) }]}>
+                <Text style={[styles.emptyText, { color: colors.secondaryText, fontSize: s(15) }]}>
                   No transactions found.
                 </Text>
               </View>
@@ -115,35 +117,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 24,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
   },
   backButton: {
     padding: 8,
     marginLeft: -8,
   },
   headerTitle: {
-    fontSize: 22,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
   listContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 40, // standard bottom padding since there's no tab bar here on the stack screen
   },
   sectionHeader: {
-    paddingVertical: 12,
     marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -152,13 +145,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   emptyContainer: {
-    marginTop: 100,
     alignItems: 'center',
-    paddingHorizontal: 40,
   },
   emptyText: {
     textAlign: 'center',
-    fontSize: 15,
     lineHeight: 22,
   },
 });

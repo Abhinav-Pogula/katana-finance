@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useTransactions } from '../context/TransactionContext';
 import { useAuth } from '../context/AuthContext';
+import { useResponsive } from '../hooks/useResponsive';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -45,6 +47,9 @@ const DashboardScreen = () => {
   const { transactions, refreshTransactions } = useTransactions();
   const { userName } = useAuth();
   const navigation = useNavigation<any>();
+  const { s, wp, hp } = useResponsive();
+  const insets = useSafeAreaInsets();
+
   const [isModalVisible, setModalVisible] = React.useState(false);
   const [notifications, setNotifications] = React.useState<DummyNotification[]>([]);
   const [showNotifications, setShowNotifications] = React.useState(false);
@@ -102,7 +107,7 @@ const DashboardScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Background Image restricted to top 45% */}
-      <View style={styles.backgroundHeader}>
+      <View style={[styles.backgroundHeader, { height: hp(45) }]}>
         <Image 
           source={{ uri: 'https://images.unsplash.com/photo-1493119508027-2b584f234d6c?q=80&w=1000&auto=format&fit=crop' }} 
           style={styles.backgroundImage}
@@ -112,20 +117,20 @@ const DashboardScreen = () => {
         <LinearGradient
           colors={['transparent', isDark ? 'rgba(13,13,13,0.6)' : 'rgba(255,255,255,0.6)', colors.background]}
           locations={[0, 0.6, 1]}
-          style={styles.gradientOverlay}
+          style={[styles.gradientOverlay, { height: hp(32) }]}
         />
       </View>
 
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+      <View style={[styles.safeArea, { paddingTop: insets.top }]}>
         
         {/* Top Header */}
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, { paddingHorizontal: wp(6), paddingVertical: s(16) }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="flower" size={26} color="#7B2FBE" style={{ marginRight: 12, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 4 }} />
+            <Ionicons name="flower" size={s(26)} color="#7B2FBE" style={{ marginRight: s(12), textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 4 }} />
             <View>
               <Text style={{ 
-                fontSize: 10, 
+                fontSize: s(10), 
                 color: '#FFFFFF', 
                 fontWeight: '700', 
                 letterSpacing: 2, 
@@ -137,7 +142,7 @@ const DashboardScreen = () => {
               }}>WELCOME BACK</Text>
               <Text style={[styles.headerTitle, { 
                 color: '#FFFFFF', 
-                fontSize: 22, 
+                fontSize: s(22), 
                 letterSpacing: 0, 
                 textTransform: 'capitalize',
                 textShadowColor: 'rgba(0,0,0,0.5)',
@@ -149,61 +154,61 @@ const DashboardScreen = () => {
           </View>
           <View style={styles.rightIcons}>
             <TouchableOpacity style={styles.iconButton} onPress={() => setShowNotifications(true)}>
-              <Ionicons name="notifications" size={24} color="#FFFFFF" style={{ textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 4 }} />
+              <Ionicons name="notifications" size={s(24)} color="#FFFFFF" style={{ textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 4 }} />
               {unreadCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{unreadCount}</Text>
+                <View style={[styles.badge, { minWidth: s(16), height: s(16), borderRadius: s(8) }]}>
+                  <Text style={[styles.badgeText, { fontSize: s(9) }]}>{unreadCount}</Text>
                 </View>
               )}
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.iconButton, { marginLeft: 16 }]} onPress={() => navigation.navigate('Profile')}>
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={16} color="#FFF" />
+            <TouchableOpacity style={[styles.iconButton, { marginLeft: s(16) }]} onPress={() => navigation.navigate('Profile')}>
+              <View style={[styles.avatarPlaceholder, { width: s(32), height: s(32), borderRadius: s(16) }]}>
+                <Ionicons name="person" size={s(16)} color="#FFF" />
               </View>
             </TouchableOpacity>
           </View>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingHorizontal: wp(6), paddingTop: s(12) }]}>
           
           {/* Main Balance Card using expo-blur */}
-          <View style={[styles.balanceCardContainer, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)' }]}>
-            <BlurView intensity={70} tint={isDark ? 'dark' : 'light'} style={styles.balanceCardBlur}>
-              <Text style={[styles.balanceTitle, { color: colors.secondaryText }]}>TOTAL BALANCE</Text>
-              <Text style={[styles.balanceAmount, { color: colors.text }]}>
+          <View style={[styles.balanceCardContainer, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)', borderRadius: s(30), marginBottom: s(32) }]}>
+            <BlurView intensity={70} tint={isDark ? 'dark' : 'light'} style={[styles.balanceCardBlur, { paddingVertical: s(32), paddingHorizontal: s(20) }]}>
+              <Text style={[styles.balanceTitle, { color: colors.secondaryText, fontSize: s(11) }]}>TOTAL BALANCE</Text>
+              <Text style={[styles.balanceAmount, { color: colors.text, fontSize: s(42) }]}>
                 ${stats.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </Text>
               
               <View style={styles.actionButtonsRow}>
                 <View style={styles.actionColumn}>
-                  <TouchableOpacity style={styles.actionButtonLight} onPress={() => navigation.navigate('Budget', { filter: 'Income' })}>
-                    <Ionicons name="arrow-up" size={20} color="#8D4C3A" />
+                  <TouchableOpacity style={[styles.actionButtonLight, { width: s(56), height: s(56), borderRadius: s(28) }]} onPress={() => navigation.navigate('Budget', { filter: 'Income' })}>
+                    <Ionicons name="arrow-up" size={s(20)} color="#8D4C3A" />
                   </TouchableOpacity>
-                  <Text style={[styles.actionLabel, { color: colors.text }]}>INCOME</Text>
+                  <Text style={[styles.actionLabel, { color: colors.text, fontSize: s(10) }]}>INCOME</Text>
                 </View>
 
                 <View style={styles.actionColumn}>
-                  <TouchableOpacity style={styles.actionButtonLight} onPress={() => navigation.navigate('Budget', { filter: 'Expense' })}>
-                    <Ionicons name="arrow-down" size={20} color="#8D4C3A" />
+                  <TouchableOpacity style={[styles.actionButtonLight, { width: s(56), height: s(56), borderRadius: s(28) }]} onPress={() => navigation.navigate('Budget', { filter: 'Expense' })}>
+                    <Ionicons name="arrow-down" size={s(20)} color="#8D4C3A" />
                   </TouchableOpacity>
-                  <Text style={[styles.actionLabel, { color: colors.text }]}>SPENT</Text>
+                  <Text style={[styles.actionLabel, { color: colors.text, fontSize: s(10) }]}>SPENT</Text>
                 </View>
 
                 <View style={styles.actionColumn}>
-                  <TouchableOpacity style={styles.actionButtonDark} onPress={() => setModalVisible(true)}>
-                    <Ionicons name="add" size={24} color="#FFF" />
+                  <TouchableOpacity style={[styles.actionButtonDark, { width: s(64), height: s(64), borderRadius: s(32) }]} onPress={() => setModalVisible(true)}>
+                    <Ionicons name="add" size={s(28)} color="#FFF" />
                   </TouchableOpacity>
-                  <Text style={[styles.actionLabel, { color: colors.text }]}>ADD</Text>
+                  <Text style={[styles.actionLabel, { color: colors.text, fontSize: s(10) }]}>ADD</Text>
                 </View>
               </View>
             </BlurView>
           </View>
 
           {/* Transaction Section */}
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Activity</Text>
+          <View style={[styles.sectionHeader, { marginBottom: s(16) }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text, fontSize: s(20) }]}>Recent Activity</Text>
             <TouchableOpacity onPress={() => navigation.navigate('AllTransactions')}>
-              <Text style={[styles.seeAll, { color: colors.secondaryText }]}>See All</Text>
+              <Text style={[styles.seeAll, { color: colors.secondaryText, fontSize: s(13) }]}>See All</Text>
             </TouchableOpacity>
           </View>
 
@@ -214,26 +219,27 @@ const DashboardScreen = () => {
           </View>
 
           {/* Bottom Grid Segment */}
-          <View style={styles.bottomGridRow}>
-            <View style={[styles.gridItemContainer, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)' }]}>
-               <BlurView intensity={isDark ? 40 : 60} tint={isDark ? 'dark' : 'light'} style={styles.gridItemBlur}>
-                 <Ionicons name="bar-chart" size={26} color="#8D4C3A" style={{ marginBottom: 16 }} />
-                 <Text style={[styles.gridItemLabel, { color: colors.secondaryText }]}>SAVINGS RATE</Text>
-                 <Text style={[styles.gridItemValue, { color: colors.text }]}>24%</Text>
+          <View style={[styles.bottomGridRow, { marginTop: s(8) }]}>
+            <View style={[styles.gridItemContainer, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)', borderRadius: s(24) }]}>
+               <BlurView intensity={isDark ? 40 : 60} tint={isDark ? 'dark' : 'light'} style={[styles.gridItemBlur, { paddingVertical: s(24), paddingHorizontal: s(20) }]}>
+                 <Ionicons name="bar-chart" size={s(26)} color="#8D4C3A" style={{ marginBottom: s(16) }} />
+                 <Text style={[styles.gridItemLabel, { color: colors.secondaryText, fontSize: s(9) }]}>SAVINGS RATE</Text>
+                 <Text style={[styles.gridItemValue, { color: colors.text, fontSize: s(24) }]}>24%</Text>
                </BlurView>
             </View>
             
-            <View style={[styles.gridItemContainer, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)' }]}>
-               <BlurView intensity={isDark ? 40 : 60} tint={isDark ? 'dark' : 'light'} style={styles.gridItemBlur}>
-                 <Ionicons name="lock-closed" size={26} color="#8D4C3A" style={{ marginBottom: 16 }} />
-                 <Text style={[styles.gridItemLabel, { color: colors.secondaryText }]}>GOAL PROGRESS</Text>
-                 <Text style={[styles.gridItemValue, { color: colors.text }]}>82%</Text>
+            <View style={[styles.gridItemContainer, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)', borderRadius: s(24) }]}>
+               <BlurView intensity={isDark ? 40 : 60} tint={isDark ? 'dark' : 'light'} style={[styles.gridItemBlur, { paddingVertical: s(24), paddingHorizontal: s(20) }]}>
+                 <Ionicons name="lock-closed" size={s(26)} color="#8D4C3A" style={{ marginBottom: s(16) }} />
+                 <Text style={[styles.gridItemLabel, { color: colors.secondaryText, fontSize: s(9) }]}>GOAL PROGRESS</Text>
+                 <Text style={[styles.gridItemValue, { color: colors.text, fontSize: s(24) }]}>82%</Text>
                </BlurView>
             </View>
           </View>
 
+          <View style={{ height: s(150) }} />
         </ScrollView>
-      </SafeAreaView>
+      </View>
 
       <AddTransactionModal 
         visible={isModalVisible} 
@@ -273,14 +279,13 @@ const DashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   backgroundHeader: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: '45%',
+    width: '100%',
   },
   backgroundImage: {
     width: '100%',
@@ -291,7 +296,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '70%', // Fades from transparent 30% down the image to solid white at the bottom cut
   },
   safeArea: {
     flex: 1,
@@ -300,14 +304,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
   },
   headerTitle: {
-    fontSize: 14,
     fontWeight: '800',
-    letterSpacing: 2,
-    color: '#333',
   },
   rightIcons: {
     flexDirection: 'row',
@@ -315,42 +314,27 @@ const styles = StyleSheet.create({
   },
   iconButton: {},
   avatarPlaceholder: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
     backgroundColor: '#E8A7B9',
     justifyContent: 'center',
     alignItems: 'center',
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 120, // Extra padding for the floating pill nav bar
   },
   balanceCardContainer: {
-    marginBottom: 40,
-    borderRadius: 30,
     overflow: 'hidden',
-    borderColor: 'rgba(200,200,200,0.2)',
     borderWidth: 1.5,
   },
   balanceCardBlur: {
-    paddingVertical: 36,
-    paddingHorizontal: 20,
     alignItems: 'center',
   },
   balanceTitle: {
-    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.5,
-    color: '#666',
     marginBottom: 8,
   },
   balanceAmount: {
-    fontSize: 46,
     fontWeight: '900',
     letterSpacing: -1.5,
-    color: '#333',
     marginBottom: 36,
   },
   actionButtonsRow: {
@@ -362,9 +346,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButtonLight: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
     backgroundColor: 'rgba(255,255,255,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -375,9 +356,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   actionButtonDark: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
     backgroundColor: '#8D4C3A', // Deep rose wood color matching reference
     justifyContent: 'center',
     alignItems: 'center',
@@ -388,26 +366,19 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   actionLabel: {
-    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1,
-    color: '#444',
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 22,
     fontWeight: '800',
-    color: '#333',
   },
   seeAll: {
-    fontSize: 14,
     fontWeight: '600',
-    color: '#666',
   },
   listContainer: {
     marginBottom: 20,
@@ -415,49 +386,35 @@ const styles = StyleSheet.create({
   bottomGridRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
   },
   gridItemContainer: {
     width: '47%',
-    borderRadius: 24,
     overflow: 'hidden',
-    borderColor: 'rgba(200,200,200,0.2)',
     borderWidth: 1.5,
   },
   gridItemBlur: {
-    paddingVertical: 24,
-    paddingHorizontal: 20,
     alignItems: 'flex-start',
   },
   gridItemLabel: {
-    fontSize: 9,
     fontWeight: '700',
     letterSpacing: 1.5,
-    color: '#666',
     marginBottom: 8,
   },
   gridItemValue: {
-    fontSize: 28,
     fontWeight: '800',
-    color: '#333',
   },
   badge: {
     position: 'absolute',
     top: -4,
     right: -4,
     backgroundColor: '#FF3B30',
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
     borderWidth: 1,
     borderColor: '#FFFFFF',
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: 9,
     fontWeight: '800',
   },
   modalOverlay: {

@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useResponsive } from '../hooks/useResponsive';
 
 interface TransactionRowProps {
   name: string;
@@ -23,28 +24,38 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
   iconColor,
 }) => {
   const { colors, isDark } = useTheme();
+  const { s } = useResponsive();
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#1C1C1C' : 'rgba(255, 255, 255, 0.85)' }]}>
-      <View style={[styles.iconContainer, { backgroundColor: iconColor + '20' }]}>
-        <Ionicons name={icon} size={24} color={iconColor} />
+    <View style={[
+      styles.container, 
+      { 
+        backgroundColor: isDark ? '#1C1C1C' : 'rgba(255, 255, 255, 0.85)',
+        paddingVertical: s(12),
+        paddingHorizontal: s(16),
+        borderRadius: s(16),
+        marginBottom: s(12),
+      }
+    ]}>
+      <View style={[styles.iconContainer, { backgroundColor: iconColor + '20', width: s(44), height: s(44), borderRadius: s(12) }]}>
+        <Ionicons name={icon} size={s(24)} color={iconColor} />
       </View>
       
-      <View style={styles.detailsContainer}>
-        <Text style={[styles.name, { color: colors.text }]}>{name}</Text>
-        <Text style={[styles.date, { color: colors.secondaryText }]}>{date}</Text>
+      <View style={[styles.detailsContainer, { marginLeft: s(12) }]}>
+        <Text style={[styles.name, { color: colors.text, fontSize: s(15) }]} numberOfLines={1}>{name}</Text>
+        <Text style={[styles.date, { color: colors.secondaryText, fontSize: s(11) }]}>{date}</Text>
       </View>
 
       <View style={styles.amountContainer}>
         <Text
           style={[
             styles.amount,
-            { color: type === 'income' ? colors.income : colors.expense, fontWeight: '800' },
+            { color: type === 'income' ? colors.income : colors.expense, fontSize: s(15), fontWeight: '800' },
           ]}
         >
           {type === 'income' ? '+' : '-'}${Math.abs(amount).toFixed(2)}
         </Text>
-        <Text style={[styles.categoryBadge, { color: colors.secondaryText }]}>
+        <Text style={[styles.categoryBadge, { color: colors.secondaryText, fontSize: s(9) }]}>
           {category.toUpperCase()}
         </Text>
       </View>
@@ -56,40 +67,29 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    marginBottom: 12,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   detailsContainer: {
-    flex: 1,
-    marginLeft: 16,
+    flex: 1.5,
   },
   name: {
-    fontSize: 15,
     fontWeight: '700',
   },
   date: {
-    fontSize: 12,
-    marginTop: 4,
+    marginTop: 2,
   },
   amountContainer: {
+    flex: 1,
     alignItems: 'flex-end',
   },
   amount: {
-    fontSize: 16,
     fontFamily: 'System',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   categoryBadge: {
-    fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0.5,
   }

@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, TextInput, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useResponsive } from '../hooks/useResponsive';
 
 interface SearchFieldProps {
   value: string;
@@ -9,20 +10,25 @@ interface SearchFieldProps {
   placeholder?: string;
 }
 
-const SearchField: React.FC<SearchFieldProps> = ({ value, onChangeText, placeholder = "Search interactions..." }) => {
+const SearchField: React.FC<SearchFieldProps> = ({ value, onChangeText, placeholder = "Search transactions..." }) => {
   const { colors, isDark } = useTheme();
+  const { s } = useResponsive();
 
   return (
     <View style={[
       styles.container, 
       { 
         backgroundColor: !isDark ? '#F5F5F5' : '#1A1A1A',
-        borderColor: colors.divider 
+        borderColor: colors.divider,
+        height: s(48),
+        borderRadius: s(12),
+        paddingHorizontal: s(12),
+        marginVertical: s(16),
       }
     ]}>
-      <Ionicons name="search-outline" size={20} color={colors.secondaryText} style={styles.icon} />
+      <Ionicons name="search-outline" size={s(20)} color={colors.secondaryText} style={[styles.icon, { marginRight: s(8) }]} />
       <TextInput
-        style={[styles.input, { color: colors.text }]}
+        style={[styles.input, { color: colors.text, fontSize: s(15) }]}
         placeholder={placeholder}
         placeholderTextColor={colors.secondaryText}
         value={value}
@@ -31,7 +37,7 @@ const SearchField: React.FC<SearchFieldProps> = ({ value, onChangeText, placehol
       />
       {value.length > 0 && (
         <TouchableOpacity onPress={() => onChangeText('')} style={styles.clearButton}>
-          <Ionicons name="close-circle" size={18} color={colors.secondaryText} />
+          <Ionicons name="close-circle" size={s(18)} color={colors.secondaryText} />
         </TouchableOpacity>
       )}
     </View>
@@ -42,18 +48,12 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 48,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    marginVertical: 16,
     borderWidth: 1,
   },
   icon: {
-    marginRight: 8,
   },
   input: {
     flex: 1,
-    fontSize: 15,
     height: '100%',
   },
   clearButton: {

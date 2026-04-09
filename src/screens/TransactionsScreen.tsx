@@ -12,6 +12,7 @@ import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
 import { useTransactions } from '../context/TransactionContext';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useResponsive } from '../hooks/useResponsive';
 import CrumpledPaper from '../components/CrumpledPaper';
 import TransactionRow from '../components/TransactionRow';
 import SearchField from '../components/SearchField';
@@ -23,6 +24,7 @@ const TransactionsScreen = () => {
   const { isDark, colors } = useTheme();
   const { transactions, loading, refreshTransactions } = useTransactions();
   const route = useRoute<any>();
+  const { s, wp } = useResponsive();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('All');
 
@@ -76,8 +78,8 @@ const TransactionsScreen = () => {
       : dayjs(title).format('MMMM D, YYYY');
 
     return (
-      <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
-        <Text style={[styles.sectionTitle, { color: colors.secondaryText }]}>{displayDate}</Text>
+      <View style={[styles.sectionHeader, { backgroundColor: colors.background, paddingVertical: s(12) }]}>
+        <Text style={[styles.sectionTitle, { color: colors.secondaryText, fontSize: s(12) }]}>{displayDate}</Text>
       </View>
     );
   };
@@ -86,13 +88,14 @@ const TransactionsScreen = () => {
     <TouchableOpacity 
       style={[
         styles.filterButton, 
+        { paddingHorizontal: s(20), paddingVertical: s(8), borderRadius: s(20), marginRight: s(8) },
         activeFilter === type && { backgroundColor: !isDark ? colors.accent : colors.accent }
       ]}
       onPress={() => setActiveFilter(type)}
     >
       <Text style={[
         styles.filterText, 
-        { color: activeFilter === type ? '#FFFFFF' : colors.secondaryText }
+        { color: activeFilter === type ? '#FFFFFF' : colors.secondaryText, fontSize: s(14) }
       ]}>
         {type}
       </Text>
@@ -102,12 +105,12 @@ const TransactionsScreen = () => {
   return (
     <CrumpledPaper>
       <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Transactions</Text>
+        <View style={[styles.header, { paddingHorizontal: wp(6), paddingTop: s(16) }]}>
+          <Text style={[styles.headerTitle, { color: colors.text, fontSize: s(26), marginBottom: s(12) }]}>Transactions</Text>
           
           <SearchField value={searchQuery} onChangeText={setSearchQuery} />
           
-          <View style={styles.filterContainer}>
+          <View style={[styles.filterContainer, { marginTop: s(16), marginBottom: s(8) }]}>
             <FilterButton type="All" />
             <FilterButton type="Income" />
             <FilterButton type="Expense" />
@@ -122,11 +125,11 @@ const TransactionsScreen = () => {
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => <TransactionRow {...item} />}
             renderSectionHeader={renderSectionHeader}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, { paddingHorizontal: wp(6), paddingBottom: s(100) }]}
             stickySectionHeadersEnabled={true}
             ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyText, { color: colors.secondaryText }]}>
+              <View style={[styles.emptyContainer, { marginTop: s(100) }]}>
+                <Text style={[styles.emptyText, { color: colors.secondaryText, fontSize: s(15) }]}>
                   No transactions found matching your criteria.
                 </Text>
               </View>
@@ -143,40 +146,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 8,
   },
   headerTitle: {
-    fontSize: 28,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
   filterContainer: {
     flexDirection: 'row',
-    marginBottom: 16,
   },
   filterButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
     backgroundColor: 'transparent',
   },
   filterText: {
-    fontSize: 14,
     fontWeight: '600',
   },
   listContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 100,
   },
   sectionHeader: {
-    paddingVertical: 12,
     marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -185,13 +174,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   emptyContainer: {
-    marginTop: 100,
     alignItems: 'center',
-    paddingHorizontal: 40,
   },
   emptyText: {
     textAlign: 'center',
-    fontSize: 15,
     lineHeight: 22,
   },
 });
