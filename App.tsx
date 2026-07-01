@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { TransactionProvider } from './src/context/TransactionContext';
 import { AuthProvider } from './src/context/AuthContext';
@@ -17,18 +18,21 @@ export default function App() {
   if (!fontsLoaded) {
     return null;
   }
+
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <TransactionProvider>
-          <ThemeProvider>
-            <NavigationContainer>
-              <AppNavigator />
-            </NavigationContainer>
-            <StatusBar style="auto" />
-          </ThemeProvider>
-        </TransactionProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <TransactionProvider>
+            <ThemeProvider>
+              <NavigationContainer>
+                <AppNavigator />
+              </NavigationContainer>
+              <StatusBar style="auto" />
+            </ThemeProvider>
+          </TransactionProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

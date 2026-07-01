@@ -14,7 +14,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const systemColorScheme = useColorScheme();
-  const [mode, setMode] = useState<ThemeMode>(systemColorScheme === 'light' ? 'light' : 'dark');
+  const [mode, setMode] = useState<ThemeMode>('dark');
   const themeOpacity = useRef(new Animated.Value(1)).current;
 
   const toggleTheme = () => {

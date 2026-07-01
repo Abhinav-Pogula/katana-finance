@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CalculatorModal from '../components/CalculatorModal';
 
 // Screens
 import DashboardScreen from '../screens/DashboardScreen';
@@ -33,7 +34,7 @@ const CustomTabButton = ({ children, onPress }: any) => (
 );
 
 const MainTabs = () => {
-  const { colors } = useTheme();
+  const { colors,isDark } = useTheme();
   const { s, wp } = useResponsive();
   const insets = useSafeAreaInsets();
 
@@ -69,8 +70,8 @@ const MainTabs = () => {
           fontWeight: '700',
           marginTop: s(4),
         },
-        tabBarActiveTintColor: '#FFFFFF',
-        tabBarInactiveTintColor: '#666666',
+        tabBarActiveTintColor: isDark ? '#FFFFFF' : colors.accent,
+        tabBarInactiveTintColor: isDark ? '#666666' : '#AAAAAA',
       }}
     >
       <Tab.Screen 
@@ -114,11 +115,15 @@ const MainTabs = () => {
 };
 
 const AppNavigator = () => {
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const { colors } = useTheme();
+  const { s } = useResponsive();
+  const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = React.useState(false);
+  const [calcVisible, setCalcVisible] = React.useState(false);
 
   if (!isAuthenticated) {
-    return <AuthScreen onLogin={(name) => login(name)} />;
+    return <AuthScreen />;
   }
 
   return (
@@ -128,14 +133,32 @@ const AppNavigator = () => {
         <Stack.Screen name="AllTransactions" component={AllTransactionsScreen} />
       </Stack.Navigator>
 
-
-      <AddTransactionModal 
-        visible={modalVisible} 
-        onClose={() => setModalVisible(false)} 
-        onSuccess={() => {
-          // You could add a toast here or trigger a global refresh event
-        }}
+      <AddTransactionModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSuccess={() => {}}
       />
+
+      <CalculatorModal
+        visible={calcVisible}
+        onClose={() => setCalcVisible(false)}
+      />
+
+      {/* Floating Calculator Button */}
+      <TouchableOpacity
+        style={[
+          styles.fab,
+          {
+            backgroundColor: colors.cardBackground,
+            bottom: s(100) + (insets.bottom > 0 ? insets.bottom : 0),
+            borderColor: colors.divider,
+          }
+        ]}
+        onPress={() => setCalcVisible(true)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="calculator-outline" size={s(22)} color={colors.text} />
+      </TouchableOpacity>
     </>
   );
 };
@@ -159,6 +182,25 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
   },
+
+  fab: {
+  position: 'absolute',
+  right: 20,
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  borderWidth: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 8,
+  elevation: 6,
+},
+
 });
+
+
 
 export default AppNavigator;

@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { 
   StyleSheet, 
   View, 
   Text, 
-  SafeAreaView, 
   TouchableOpacity, 
   Switch, 
   Alert, 
   ScrollView 
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useTransactions } from '../context/TransactionContext';
@@ -22,8 +23,9 @@ import dayjs from 'dayjs';
 const ProfileScreen = () => {
   const { colors, isDark, toggleTheme } = useTheme();
   const { transactions, refreshTransactions } = useTransactions();
-  const { userName } = useAuth();
+  const { userName, uid, logout } = useAuth();
   const { s, wp } = useResponsive();
+  const navigation = useNavigation<any>();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -63,9 +65,38 @@ const ProfileScreen = () => {
           text: "Clear All", 
           style: "destructive", 
           onPress: async () => {
-            await clearAllData();
-            await refreshTransactions();
-            Alert.alert("Success", "All data has been cleared.");
+            if (!uid) {
+              Alert.alert("Error", "You're not signed in yet. Please try again in a moment.");
+              return;
+            }
+            try {
+              await clearAllData(uid);
+              await refreshTransactions();
+              Alert.alert("Success", "All data has been cleared.");
+            } catch (e) {
+              Alert.alert("Error", "Failed to clear data. Please try again.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (e) {
+              Alert.alert("Error", "Failed to log out. Please try again.");
+            }
           }
         }
       ]
@@ -83,8 +114,15 @@ const ProfileScreen = () => {
     <CrumpledPaper>
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: wp(6) }]}>
-          <Text style={[styles.title, { color: colors.text, fontSize: s(28), marginBottom: s(24) }]}>Settings</Text>
-
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: s(24) }}>
+            <Text style={[styles.title, { color: colors.text, fontSize: s(28), marginBottom: 0 }]}>Settings</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Home')}
+              style={{ backgroundColor: colors.cardBackground, borderRadius: s(12), padding: s(10) }}
+            >
+              <Ionicons name="home-outline" size={s(22)} color={colors.text} />
+            </TouchableOpacity>
+        </View>
           <View style={[styles.profileHeader, { marginBottom: s(32) }]}>
             <View style={[styles.avatar, { backgroundColor: colors.accent, width: s(64), height: s(64), borderRadius: s(32) }]}>
               <Text style={[styles.avatarText, { fontSize: s(24) }]}>{userName.charAt(0).toUpperCase()}</Text>
@@ -123,6 +161,14 @@ const ProfileScreen = () => {
           >
             <Ionicons name="trash-outline" size={s(20)} color={isDark ? '#B30000' : colors.expense} />
             <Text style={[styles.clearButtonText, { color: isDark ? '#B30000' : colors.expense, fontSize: s(16), marginLeft: s(8) }]}>Clear All Data</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.clearButton, { borderColor: colors.divider, height: s(56), borderRadius: s(16), marginTop: s(12) }]}
+            onPress={handleLogout}
+          >
+            <Ionicons name="log-out-outline" size={s(20)} color={colors.text} />
+            <Text style={[styles.clearButtonText, { color: colors.text, fontSize: s(16), marginLeft: s(8) }]}>Log Out</Text>
           </TouchableOpacity>
 
           <Text style={[styles.versionText, { color: colors.secondaryText, fontSize: s(12), marginTop: s(32) }]}>Version 1.0.0</Text>

@@ -9,25 +9,24 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-interface AuthScreenProps {
-  onLogin: (name: string) => void;
-}
-
-const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
+const AuthScreen: React.FC = () => {
   const { colors, toggleTheme } = useTheme();
   const { s, wp, hp } = useResponsive();
   const insets = useSafeAreaInsets();
+  const { signUpWithEmail, signInWithEmail } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
+  const [loading, setLoading] = useState(false);
   
-  // Form State
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,15 +34,31 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSubmit = () => {
+  const friendlyError = (err: any) => {
+    const code = err?.code || '';
+    if (code.includes('email-already-in-use')) return 'An account with this email already exists.';
+    if (code.includes('invalid-email')) return 'Please enter a valid email address.';
+    if (code.includes('weak-password')) return 'Password should be at least 6 characters.';
+    if (code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential')) {
+      return 'Incorrect email or password.';
+    }
+    return 'Something went wrong. Please try again.';
+  };
+
+  const handleSubmit = async () => {
     if (activeTab === 'signin') {
       if (!email.trim() || !password.trim()) {
         Alert.alert("Missing Fields", "Please enter both email and password.");
         return;
       }
-      // Use the part before @ in email if no explicit name is provided
-      const signInName = email.split('@')[0];
-      onLogin(signInName);
+      setLoading(true);
+      try {
+        await signInWithEmail(email.trim(), password);
+      } catch (err) {
+        Alert.alert("Sign In Failed", friendlyError(err));
+      } finally {
+        setLoading(false);
+      }
     } else {
       if (!fullName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
         Alert.alert("Missing Fields", "Please fill out all required fields.");
@@ -53,7 +68,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
         Alert.alert("Password Mismatch", "Passwords do not match.");
         return;
       }
-      onLogin(fullName);
+      setLoading(true);
+      try {
+        await signUpWithEmail(fullName.trim(), email.trim(), password);
+      } catch (err) {
+        Alert.alert("Sign Up Failed", friendlyError(err));
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -69,7 +91,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
           keyboardShouldPersistTaps="handled"
         >
           
-          {/* Top Brand Section */}
           <View style={[styles.brandContainer, { marginBottom: hp(5) }]}>
             <View style={[styles.logoBox, { width: s(64), height: s(64), borderRadius: s(16), marginBottom: s(20) }]}>
               <Text style={[styles.logoText, { fontSize: s(40) }]}>K</Text>
@@ -78,11 +99,9 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
             <Text style={[styles.appSubtitle, { fontSize: s(14) }]}>Take control of your wealth.</Text>
           </View>
 
-          {/* Auth Card Container */}
           <View style={[styles.cardContainer, { borderRadius: s(32), padding: s(24) }]}>
             <Text style={[styles.cardTitle, { fontSize: s(22), marginBottom: s(24) }]}>Get started</Text>
 
-            {/* Toggle Switch */}
             <View style={[styles.toggleContainer, { padding: s(4), marginBottom: s(32) }]}>
               <TouchableOpacity 
                 style={[styles.toggleButton, { paddingVertical: s(12) }, activeTab === 'signin' && styles.toggleButtonActive]}
@@ -102,7 +121,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
               </TouchableOpacity>
             </View>
 
-            {/* Dynamic Form Fields */}
             {activeTab === 'signup' && (
               <View style={[styles.inputGroup, { marginBottom: s(20) }]}>
                 <Text style={[styles.inputLabel, { fontSize: s(13), marginBottom: s(8) }]}>Full Name</Text>
@@ -172,11 +190,18 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
               </View>
             )}
 
-            {/* Submit Button */}
-            <TouchableOpacity style={[styles.submitButton, { paddingVertical: s(16), borderRadius: s(100), marginTop: s(12) }]} onPress={handleSubmit}>
-              <Text style={[styles.submitButtonText, { fontSize: s(16) }]}>
-                {activeTab === 'signin' ? 'Sign In' : 'Create Account'}
-              </Text>
+            <TouchableOpacity 
+              style={[styles.submitButton, { paddingVertical: s(16), borderRadius: s(100), marginTop: s(12) }]} 
+              onPress={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#0D0D0D" />
+              ) : (
+                <Text style={[styles.submitButtonText, { fontSize: s(16) }]}>
+                  {activeTab === 'signin' ? 'Sign In' : 'Create Account'}
+                </Text>
+              )}
             </TouchableOpacity>
 
           </View>
@@ -188,107 +213,30 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0D0D0D',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  brandContainer: {
-    alignItems: 'center',
-  },
-  logoBox: {
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoText: {
-    fontWeight: '900',
-    color: '#0D0D0D',
-  },
-  appName: {
-    fontWeight: '800',
-    color: '#FFFFFF',
-    fontFamily: 'NotoSerifJP_900Black',
-  },
-  appSubtitle: {
-    color: '#888888',
-    fontWeight: '500',
-  },
-  cardContainer: {
-    backgroundColor: '#1A1A1A',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  cardTitle: {
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 100,
-  },
-  toggleButton: {
-    flex: 1,
-    borderRadius: 100,
-    alignItems: 'center',
-  },
-  toggleButtonActive: {
-    backgroundColor: '#FFFFFF',
-  },
-  toggleText: {
-    fontWeight: '700',
-    color: '#888888',
-  },
-  toggleTextActive: {
-    color: '#0D0D0D',
-  },
-  inputGroup: {
-  },
-  inputLabel: {
-    fontWeight: '600',
-    color: '#CCCCCC',
-    marginLeft: 4,
-  },
-  input: {
-    backgroundColor: '#262626',
-    color: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#333333',
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#262626',
-    borderWidth: 1,
-    borderColor: '#333333',
-    alignItems: 'center',
-  },
-  passwordInput: {
-    flex: 1,
-    color: '#FFFFFF',
-  },
-  eyeButton: {
-    padding: 16,
-  },
-  forgotPasswordContainer: {
-    alignItems: 'flex-end',
-    marginTop: -8,
-  },
-  forgotPasswordText: {
-    color: '#888888',
-    fontWeight: '600',
-  },
-  submitButton: {
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-  },
-  submitButtonText: {
-    color: '#0D0D0D',
-    fontWeight: '800',
-  },
+  container: { flex: 1, backgroundColor: '#0D0D0D' },
+  scrollContent: { flexGrow: 1, justifyContent: 'center' },
+  brandContainer: { alignItems: 'center' },
+  logoBox: { backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' },
+  logoText: { fontWeight: '900', color: '#0D0D0D' },
+  appName: { fontWeight: '800', color: '#FFFFFF', fontFamily: 'NotoSerifJP_900Black' },
+  appSubtitle: { color: '#888888', fontWeight: '500' },
+  cardContainer: { backgroundColor: '#1A1A1A', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  cardTitle: { fontWeight: '800', color: '#FFFFFF' },
+  toggleContainer: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 100 },
+  toggleButton: { flex: 1, borderRadius: 100, alignItems: 'center' },
+  toggleButtonActive: { backgroundColor: '#FFFFFF' },
+  toggleText: { fontWeight: '700', color: '#888888' },
+  toggleTextActive: { color: '#0D0D0D' },
+  inputGroup: {},
+  inputLabel: { fontWeight: '600', color: '#CCCCCC', marginLeft: 4 },
+  input: { backgroundColor: '#262626', color: '#FFFFFF', borderWidth: 1, borderColor: '#333333' },
+  passwordContainer: { flexDirection: 'row', backgroundColor: '#262626', borderWidth: 1, borderColor: '#333333', alignItems: 'center' },
+  passwordInput: { flex: 1, color: '#FFFFFF' },
+  eyeButton: { padding: 16 },
+  forgotPasswordContainer: { alignItems: 'flex-end', marginTop: -8 },
+  forgotPasswordText: { color: '#888888', fontWeight: '600' },
+  submitButton: { backgroundColor: '#FFFFFF', alignItems: 'center' },
+  submitButtonText: { color: '#0D0D0D', fontWeight: '800' },
 });
 
 export default AuthScreen;

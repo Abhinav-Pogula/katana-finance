@@ -94,13 +94,31 @@ const DashboardScreen = () => {
   );
 
   const stats = React.useMemo(() => {
-    let balance = 0;
-    transactions.forEach(tx => {
-      if (tx.type === 'income') balance += tx.amount;
-      else balance -= tx.amount;
-    });
-    return { balance };
-  }, [transactions]);
+  let totalIncome = 0;
+  let totalExpense = 0;
+  let balance = 0;
+
+  transactions.forEach(tx => {
+    if (tx.type === 'income') {
+      balance += tx.amount;
+      totalIncome += tx.amount;
+    } else {
+      balance -= tx.amount;
+      totalExpense += tx.amount;
+    }
+  });
+
+  // Savings rate = how much of income is saved (not spent)
+  const savingsRate = totalIncome > 0
+    ? Math.max(0, Math.round(((totalIncome - totalExpense) / totalIncome) * 100))
+    : 0;
+
+  // Goal progress = % toward a $10,000 savings goal based on current balance
+  const SAVINGS_GOAL = 10000;
+  const goalProgress = Math.min(100, Math.max(0, Math.round((Math.max(0, balance) / SAVINGS_GOAL) * 100)));
+
+  return { balance, savingsRate, goalProgress };
+}, [transactions]);
 
   const recentTransactions = transactions.slice(0, 4);
 
@@ -219,23 +237,27 @@ const DashboardScreen = () => {
           </View>
 
           {/* Bottom Grid Segment */}
-          <View style={[styles.bottomGridRow, { marginTop: s(8) }]}>
-            <View style={[styles.gridItemContainer, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)', borderRadius: s(24) }]}>
-               <BlurView intensity={isDark ? 40 : 60} tint={isDark ? 'dark' : 'light'} style={[styles.gridItemBlur, { paddingVertical: s(24), paddingHorizontal: s(20) }]}>
-                 <Ionicons name="bar-chart" size={s(26)} color="#8D4C3A" style={{ marginBottom: s(16) }} />
-                 <Text style={[styles.gridItemLabel, { color: colors.secondaryText, fontSize: s(9) }]}>SAVINGS RATE</Text>
-                 <Text style={[styles.gridItemValue, { color: colors.text, fontSize: s(24) }]}>24%</Text>
-               </BlurView>
+            <View style={[styles.bottomGridRow, { marginTop: s(8) }]}>
+              <View style={[styles.gridItemContainer, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)', borderRadius: s(24) }]}>
+                <BlurView intensity={isDark ? 40 : 60} tint={isDark ? 'dark' : 'light'} style={[styles.gridItemBlur, { paddingVertical: s(24), paddingHorizontal: s(20) }]}>
+                  <Ionicons name="bar-chart" size={s(26)} color="#8D4C3A" style={{ marginBottom: s(16) }} />
+                  <Text style={[styles.gridItemLabel, { color: colors.secondaryText, fontSize: s(9) }]}>SAVINGS RATE</Text>
+                  <Text style={[styles.gridItemValue, { color: colors.text, fontSize: s(24) }]}>
+                    {stats.savingsRate}%
+                  </Text>
+                </BlurView>
+              </View>
+
+              <View style={[styles.gridItemContainer, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)', borderRadius: s(24) }]}>
+                <BlurView intensity={isDark ? 40 : 60} tint={isDark ? 'dark' : 'light'} style={[styles.gridItemBlur, { paddingVertical: s(24), paddingHorizontal: s(20) }]}>
+                  <Ionicons name="lock-closed" size={s(26)} color="#8D4C3A" style={{ marginBottom: s(16) }} />
+                  <Text style={[styles.gridItemLabel, { color: colors.secondaryText, fontSize: s(9) }]}>GOAL PROGRESS</Text>
+                  <Text style={[styles.gridItemValue, { color: colors.text, fontSize: s(24) }]}>
+                    {stats.goalProgress}%
+                  </Text>
+                </BlurView>
+              </View>
             </View>
-            
-            <View style={[styles.gridItemContainer, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)', borderRadius: s(24) }]}>
-               <BlurView intensity={isDark ? 40 : 60} tint={isDark ? 'dark' : 'light'} style={[styles.gridItemBlur, { paddingVertical: s(24), paddingHorizontal: s(20) }]}>
-                 <Ionicons name="lock-closed" size={s(26)} color="#8D4C3A" style={{ marginBottom: s(16) }} />
-                 <Text style={[styles.gridItemLabel, { color: colors.secondaryText, fontSize: s(9) }]}>GOAL PROGRESS</Text>
-                 <Text style={[styles.gridItemValue, { color: colors.text, fontSize: s(24) }]}>82%</Text>
-               </BlurView>
-            </View>
-          </View>
 
           <View style={{ height: s(150) }} />
         </ScrollView>

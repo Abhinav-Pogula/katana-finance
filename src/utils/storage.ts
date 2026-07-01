@@ -1,4 +1,14 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  collection,
+  doc,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  updateDoc,
+  query,
+  orderBy,
+} from 'firebase/firestore';
+import { db } from './firebase';
 
 export interface Transaction {
   id: string;
@@ -11,54 +21,61 @@ export interface Transaction {
   iconColor: string;
 }
 
-const STORAGE_KEYS = {
-  TRANSACTIONS: '@katana_transactions',
-};
+const txCollection = (uid: string) => collection(db, 'users', uid, 'transactions');
 
-export const getTransactions = async (): Promise<Transaction[]> => {
+export const getTransactions = async (uid: string): Promise<Transaction[]> => {
   try {
-    const jsonValue = await AsyncStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-    return jsonValue != null ? JSON.parse(jsonValue) : [];
+    const q = query(txCollection(uid), orderBy('date', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Transaction));
   } catch (e) {
     console.error('Failed to fetch transactions', e);
     return [];
   }
 };
 
-export const saveTransactions = async (transactions: Transaction[]): Promise<void> => {
+export const addTransaction = async (
+  uid: string,
+  transaction: Omit<Transaction, 'id'>
+): Promise<string> => {
   try {
-    const jsonValue = JSON.stringify(transactions);
-    await AsyncStorage.setItem(STORAGE_KEYS.TRANSACTIONS, jsonValue);
-    console.log('✅ Storage: Successfully saved', transactions.length, 'transactions');
+    const ref = await addDoc(txCollection(uid), transaction);
+    console.log('✅ Storage: Added transaction', ref.id);
+    return ref.id;
   } catch (e) {
-    console.error('❌ Storage: Failed to save transactions', e);
+    console.error('❌ Storage: Failed to add transaction', e);
+    throw e;
   }
 };
 
-export const addTransaction = async (transaction: Transaction): Promise<void> => {
-  const current = await getTransactions();
-  await saveTransactions([transaction, ...current]);
+export const deleteTransaction = async (uid: string, id: string): Promise<void> => {
+  try {
+    await deleteDoc(doc(db, 'users', uid, 'transactions', id));
+  } catch (e) {
+    console.error('Failed to delete transaction', e);
+    throw e;
+  }
 };
 
-// Clear all transaction data
-export const clearAllData = async (): Promise<void> => {
+export const updateTransaction = async (
+  uid: string,
+  id: string,
+  data: Partial<Omit<Transaction, 'id'>>
+): Promise<void> => {
   try {
-    await AsyncStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+    await updateDoc(doc(db, 'users', uid, 'transactions', id), data);
+  } catch (e) {
+    console.error('Failed to update transaction', e);
+    throw e;
+  }
+};
+
+// Clear all transaction data for this user
+export const clearAllData = async (uid: string): Promise<void> => {
+  try {
+    const snap = await getDocs(txCollection(uid));
+    await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
   } catch (e) {
     console.error('Failed to clear transactions', e);
   }
-};
-
-// Seed data for initial look
-export const seedMockData = async () => {
-  const mockData: Transaction[] = [
-    { id: '1', name: 'Netflix Subscription', category: 'Entertainment', date: '2026-04-08', amount: 15.99, type: 'expense', icon: 'film-outline', iconColor: '#E74C3C' },
-    { id: '2', name: 'Whole Foods Market', category: 'Food', date: '2026-04-08', amount: 145.20, type: 'expense', icon: 'fast-food-outline', iconColor: '#2ECC71' },
-    { id: '3', name: 'Salary Deposit', category: 'Income', date: '2026-04-07', amount: 5000.00, type: 'income', icon: 'cash-outline', iconColor: '#9B59B6' },
-    { id: '4', name: 'Amazon Shopping', category: 'Shopping', date: '2026-04-07', amount: 84.50, type: 'expense', icon: 'cart-outline', iconColor: '#F39C12' },
-    { id: '5', name: 'Upwork Payment', category: 'Income', date: '2026-04-05', amount: 1200.00, type: 'income', icon: 'briefcase-outline', iconColor: '#3498DB' },
-    { id: '6', name: 'Starbucks Coffee', category: 'Food', date: '2026-04-05', amount: 5.50, type: 'expense', icon: 'cafe-outline', iconColor: '#1E824C' },
-    { id: '7', name: 'Gym Membership', category: 'Health', date: '2026-04-01', amount: 50.00, type: 'expense', icon: 'fitness-outline', iconColor: '#E67E22' },
-  ];
-  await saveTransactions(mockData);
 };

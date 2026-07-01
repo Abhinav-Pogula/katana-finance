@@ -36,31 +36,21 @@ const AnalyticsScreen = () => {
     let totalExpense = 0;
     
     const categoryTotals: { [key: string]: { value: number, color: string } } = {};
-    // Theme aware color palettes
     const lightColors = ['#FF6B6B', '#4ECDC4', '#F9A826', '#9B59B6', '#45B7D1', '#FF9F43', '#2ECC71', '#F78FB3'];
     const darkColors = ['#FF3366', '#20D2FF', '#FF9933', '#B833FF', '#33FF99', '#F9E231', '#FF3399', '#33CCFF'];
     const premiumColors = isDark ? darkColors : lightColors;
     let colorIdx = 0;
-    
-    // Initialize last 6 months with realistic dummy data
-    const months: string[] = [];
-    const monthlyData: { [key: string]: { income: number, expense: number } } = {};
-    for (let i = 5; i >= 0; i--) {
-      const d = dayjs().subtract(i, 'month');
-      const m = d.format('MMM');
-      months.push(m);
-      
-      // Create deterministic dummy data based on the month name's character codes
-      // This prevents the chart from wildly changing values every time it re-renders
-      const seed = m.charCodeAt(0) + m.charCodeAt(1) + m.charCodeAt(2);
-      
-      // Income ranges between ~$3000 and ~$7000
-      const dummyIncome = 3000 + (seed % 41) * 100; 
-      
-      // Expense ranges between ~$500 and ~$2500
-      const dummyExpense = 500 + (seed % 21) * 100;
-      
-      monthlyData[m] = { income: dummyIncome, expense: dummyExpense };
+
+    // Build last 7 days structure
+    const last7Days: { date: string; label: string; shortLabel: string; spent: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = now.subtract(i, 'day');
+      last7Days.push({
+        date: d.format('YYYY-MM-DD'),
+        label: d.format('ddd'),
+        shortLabel: d.format('DD'),
+        spent: 0,
+      });
     }
 
     transactions.forEach(tx => {
@@ -71,80 +61,60 @@ const AnalyticsScreen = () => {
         if (isThisMonth) totalIncome += tx.amount;
       } else {
         if (isThisMonth) totalExpense += tx.amount;
-        
-        // Pie Chart processing (Expenses by category)
+
+        // Pie chart
         if (!categoryTotals[tx.category]) {
-           categoryTotals[tx.category] = { 
-             value: 0, 
-             color: premiumColors[colorIdx % premiumColors.length] 
-           };
-           colorIdx++;
+          categoryTotals[tx.category] = { 
+            value: 0, 
+            color: premiumColors[colorIdx % premiumColors.length] 
+          };
+          colorIdx++;
         }
         categoryTotals[tx.category].value += tx.amount;
-      }
 
-      // Bar Chart processing (Check if transaction month is within our initialized 6 months)
-      const monthKey = txDate.format('MMM');
-      if (monthlyData[monthKey] !== undefined && txDate.isAfter(now.subtract(6, 'month').startOf('month').subtract(1, 'second'))) {
-        if (tx.type === 'income') monthlyData[monthKey].income += tx.amount;
-        else monthlyData[monthKey].expense += tx.amount;
+        // 7-day daily bar chart
+        const txDateStr = txDate.format('YYYY-MM-DD');
+        const dayEntry = last7Days.find(d => d.date === txDateStr);
+        if (dayEntry) {
+          dayEntry.spent += tx.amount;
+        }
       }
     });
 
-    // Prepare Pie Data
+    // Pie data
     const pieData = Object.keys(categoryTotals).map(cat => ({
       value: categoryTotals[cat].value,
       color: categoryTotals[cat].color,
-      text: cat, // Retain FULL text, no truncation
+      text: cat,
     }));
 
-    // Prepare Bar Data (Sorted by time)
-    const barData: any[] = [];
-    
-    // Calculate responsive bar dimensions to avoid overflow
-    const chartContentWidth = width - wp(12) - 40; // Horizontal padding + Y-axis allowance
-    const totalBars = months.length * 2;
-    const dynamicBarWidth = (chartContentWidth / totalBars) * 0.6;
-    const dynamicSpacing = (chartContentWidth / months.length) * 0.4;
-
-    months.forEach((m, idx) => {
-      const data = monthlyData[m];
-      
-      // Income Bar - gradient green
-      barData.push({ 
-        value: data.income, 
-        label: m, 
-        frontColor: colors.income,
-        showGradient: true,
-        gradientColor: '#69F0AE',
-        spacing: s(4), // Minimal gap between income/expense
-        labelTextStyle: { color: colors.text, fontSize: s(10), fontWeight: '800', width: s(40), textAlign: 'center' },
-        topRadius: s(6),
-        topLabelComponent: data.income > 0 ? () => (
-          <Text style={{fontSize: s(8), color: colors.secondaryText, marginBottom: 2, fontWeight: '600'}}>${data.income.toFixed(0)}</Text>
-        ) : undefined,
-      });
-      
-      // Expense Bar - gradient red
-      barData.push({ 
-        value: data.expense, 
-        frontColor: colors.expense,
-        showGradient: true,
-        gradientColor: '#FF6B6B',
-        spacing: dynamicSpacing, // Dynamic spacing to fill chart width perfectly
-        topRadius: s(6),
-        topLabelComponent: data.expense > 0 ? () => (
-          <Text style={{fontSize: s(8), color: colors.secondaryText, marginBottom: 2, fontWeight: '600'}}>${data.expense.toFixed(0)}</Text>
-        ) : undefined,
-      });
-    });
+    // 7-day bar data
+    const dailyBarData = last7Days.map((day, idx) => ({
+      value: day.spent,
+      label: `${day.label}\n${day.shortLabel}`,
+      frontColor: day.date === now.format('YYYY-MM-DD') ? colors.accent : colors.expense,
+      showGradient: true,
+      gradientColor: day.date === now.format('YYYY-MM-DD') ? colors.accent + '88' : '#FF6B6B',
+      topRadius: s(8),
+      labelTextStyle: { 
+        color: colors.secondaryText, 
+        fontSize: s(10), 
+        fontWeight: '700' as const,
+        textAlign: 'center' as const,
+      },
+      topLabelComponent: day.spent > 0 ? () => (
+        <Text style={{ fontSize: s(8), color: colors.secondaryText, marginBottom: 2, fontWeight: '600' }}>
+          ${day.spent.toFixed(0)}
+        </Text>
+      ) : undefined,
+    }));
 
     return {
       totalIncome,
       totalExpense,
       balance: totalIncome - totalExpense,
       pieData,
-      barData
+      dailyBarData,
     };
   }, [transactions, colors, isDark]);
 
@@ -153,7 +123,7 @@ const AnalyticsScreen = () => {
     borderColor: colors.divider,
     shadowColor: !isDark ? '#000000' : colors.accent,
     shadowOffset: { width: 0, height: !isDark ? 4 : 0 },
-    shadowOpacity: !isDark ? 0.05 : 0.25, // Cyberpunk neon glow effect in dark mode
+    shadowOpacity: !isDark ? 0.05 : 0.25,
     shadowRadius: !isDark ? 12 : 18,
     elevation: !isDark ? 3 : 10,
   }), [isDark, colors]);
@@ -169,7 +139,10 @@ const AnalyticsScreen = () => {
   return (
     <CrumpledPaper>
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: wp(6), paddingTop: s(16) }]} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          contentContainerStyle={[styles.scrollContent, { paddingHorizontal: wp(6), paddingTop: s(16) }]} 
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={[styles.title, { color: colors.text, fontSize: s(28), marginBottom: s(24) }]}>Analytics</Text>
 
           <View style={styles.summaryContainer}>
@@ -192,9 +165,9 @@ const AnalyticsScreen = () => {
 
           {/* Pie Chart: Spending by Category */}
           <View style={[styles.chartCard, dynamicCardStyle, { borderRadius: s(24), padding: s(16), marginBottom: s(24) }]}>
-            <Text style={[styles.chartTitle, { color: colors.text, textAlign: 'center', fontSize: s(16), marginBottom: s(20) }]}>Spending Breakdown</Text>
-            
-            {/* Added container glow for a futuristic feel */}
+            <Text style={[styles.chartTitle, { color: colors.text, textAlign: 'center', fontSize: s(16), marginBottom: s(20) }]}>
+              Spending Breakdown
+            </Text>
             <View style={[styles.pieContainer, {
               shadowColor: !isDark ? '#000000' : colors.accent,
               shadowOffset: { width: 0, height: 0 },
@@ -208,8 +181,8 @@ const AnalyticsScreen = () => {
                 <PieChart
                   data={stats.pieData}
                   donut
-                  radius={s(90)}          
-                  innerRadius={s(65)}      
+                  radius={s(90)}
+                  innerRadius={s(65)}
                   innerCircleColor={!isDark ? '#FFF' : colors.cardBackground}
                   centerLabelComponent={() => (
                     <View style={{ justifyContent: 'center', alignItems: 'center' }}>
@@ -218,11 +191,11 @@ const AnalyticsScreen = () => {
                       </Text>
                     </View>
                   )}
-                  strokeWidth={0}       
+                  strokeWidth={0}
                   focusOnPress
                 />
               ) : (
-                <Text style={{color: colors.secondaryText, fontSize: s(14)}}>No expenses this month</Text>
+                <Text style={{ color: colors.secondaryText, fontSize: s(14) }}>No expenses this month</Text>
               )}
             </View>
             
@@ -230,52 +203,57 @@ const AnalyticsScreen = () => {
               {stats.pieData.map((item, index) => (
                 <View key={index} style={[styles.legendItem, { marginBottom: s(12), paddingRight: s(8) }]}>
                   <View style={[styles.legendDot, { backgroundColor: item.color, width: s(10), height: s(10), borderRadius: s(5), marginRight: s(8) }]} />
-                  <View style={{flex: 1}}>
-                    <Text style={[styles.legendText, { color: colors.secondaryText, fontSize: s(12) }]} numberOfLines={1}>{item.text}</Text>
-                    <Text style={[styles.legendValue, { color: colors.text, fontSize: s(13) }]}>${item.value.toFixed(0)}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.legendText, { color: colors.secondaryText, fontSize: s(12) }]} numberOfLines={1}>
+                      {item.text}
+                    </Text>
+                    <Text style={[styles.legendValue, { color: colors.text, fontSize: s(13) }]}>
+                      ${item.value.toFixed(0)}
+                    </Text>
                   </View>
                 </View>
               ))}
             </View>
           </View>
 
-          {/* Bar Chart: Monthly Comparison */}
-          <View style={[styles.chartCard, dynamicCardStyle, { borderRadius: s(24), padding: s(20), marginBottom: s(24) }]}>
-            <View style={{ marginBottom: s(20) }}>
-              <Text style={[styles.chartTitle, { color: colors.text, textAlign: 'left', marginBottom: s(12), fontSize: s(16) }]}>Income vs Expense</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
-                <View style={[styles.legendItem, { width: 'auto', marginRight: s(20), marginBottom: s(4) }]}>
-                  <View style={[styles.legendDot, { backgroundColor: colors.income, width: s(12), height: s(12), borderRadius: s(6), marginRight: s(8) }]} />
-                  <Text style={[styles.legendText, { color: colors.secondaryText, fontSize: s(14) }]}>Income</Text>
-                </View>
-                <View style={[styles.legendItem, { width: 'auto', marginRight: 0, marginBottom: s(4) }]}>
-                  <View style={[styles.legendDot, { backgroundColor: colors.expense, width: s(12), height: s(12), borderRadius: s(6), marginRight: s(8) }]} />
-                  <Text style={[styles.legendText, { color: colors.secondaryText, fontSize: s(14) }]}>Expense</Text>
-                </View>
+          {/* Bar Chart: Daily Spending (Last 7 Days) */}
+            <View style={[styles.chartCard, dynamicCardStyle, { borderRadius: s(24), padding: s(20), marginBottom: s(24), overflow: 'hidden' }]}>
+            <View style={{ marginBottom: s(16) }}>
+              <Text style={[styles.chartTitle, { color: colors.text, fontSize: s(16), marginBottom: s(4) }]}>
+                Daily Spending
+              </Text>
+              <Text style={[{ color: colors.secondaryText, fontSize: s(12) }]}>
+                Last 7 days — today highlighted
+              </Text>
+            </View>
+
+            {stats.dailyBarData.every(d => d.value === 0) ? (
+              <View style={{ alignItems: 'center', paddingVertical: s(40) }}>
+                <Text style={{ color: colors.secondaryText, fontSize: s(14) }}>No spending in the last 7 days</Text>
               </View>
-            </View>
-            
-            <View style={[styles.barContainer, { marginLeft: -s(20) }]}>
-              <BarChart
-                data={stats.barData}
-                barWidth={s(18)}
-                initialSpacing={s(15)}
-                noOfSections={4}
-                height={s(200)}
-                dashGap={s(4)}
-                backgroundColor="transparent"
-                yAxisThickness={0}
-                xAxisThickness={0}
-                hideRules={false}          
-                rulesType="dashed"
-                rulesColor={colors.divider} 
-                yAxisLabelPrefix="$"
-                yAxisTextStyle={{ color: colors.secondaryText, fontSize: s(11), fontWeight: '700' }}
-                isAnimated
-              />
-            </View>
+            ) : (
+              <View style={{ marginLeft: -s(4) }}>
+                <BarChart
+                  data={stats.dailyBarData}
+                  barWidth={s(28)}
+                  spacing={s(16)}
+                  initialSpacing={s(10)}
+                  noOfSections={4}
+                  height={s(180)}
+                  backgroundColor="transparent"
+                  yAxisThickness={0}
+                  xAxisThickness={0}
+                  hideRules={false}
+                  rulesType="dashed"
+                  rulesColor={colors.divider}
+                  yAxisLabelPrefix="$"
+                  yAxisTextStyle={{ color: colors.secondaryText, fontSize: s(10), fontWeight: '700' }}
+                  isAnimated
+                />
+              </View>
+            )}
           </View>
-          
+
           <View style={{ height: s(100) }} />
         </ScrollView>
       </SafeAreaView>
@@ -284,51 +262,19 @@ const AnalyticsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  scrollContent: {
-  },
-  title: {
-    fontWeight: '800',
-  },
-  summaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  chartCard: {
-    borderWidth: 1,
-  },
-  chartTitle: {
-    fontWeight: '700',
-  },
-  pieContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  legendContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  legendItem: {
-    width: '48%',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  legendDot: {
-  },
-  legendText: {
-  },
-  legendValue: {
-    fontWeight: '700',
-  },
-  barContainer: {
-  },
+  container: { flex: 1 },
+  loader: { flex: 1, justifyContent: 'center' },
+  scrollContent: {},
+  title: { fontWeight: '800' },
+  summaryContainer: { flexDirection: 'row', justifyContent: 'space-between' },
+  chartCard: { borderWidth: 1 },
+  chartTitle: { fontWeight: '700' },
+  pieContainer: { alignItems: 'center', justifyContent: 'center' },
+  legendContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  legendItem: { width: '48%', flexDirection: 'row', alignItems: 'center' },
+  legendDot: {},
+  legendText: {},
+  legendValue: { fontWeight: '700' },
 });
 
 export default AnalyticsScreen;
