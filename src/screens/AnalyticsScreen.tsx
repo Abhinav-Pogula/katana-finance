@@ -104,7 +104,7 @@ const AnalyticsScreen = () => {
       },
       topLabelComponent: day.spent > 0 ? () => (
         <Text style={{ fontSize: s(8), color: colors.secondaryText, marginBottom: 2, fontWeight: '600' }}>
-          ${day.spent.toFixed(0)}
+          ₹{day.spent.toFixed(0)}
         </Text>
       ) : undefined,
     }));
@@ -187,7 +187,7 @@ const AnalyticsScreen = () => {
                   centerLabelComponent={() => (
                     <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                       <Text style={{ fontSize: s(20), color: colors.text, fontWeight: '900' }}>
-                        ${stats.totalExpense.toFixed(0)}
+                        ₹{stats.totalExpense.toFixed(0)}
                       </Text>
                     </View>
                   )}
@@ -208,7 +208,7 @@ const AnalyticsScreen = () => {
                       {item.text}
                     </Text>
                     <Text style={[styles.legendValue, { color: colors.text, fontSize: s(13) }]}>
-                      ${item.value.toFixed(0)}
+                      ₹{item.value.toFixed(0)}
                     </Text>
                   </View>
                 </View>
@@ -235,6 +235,8 @@ const AnalyticsScreen = () => {
               <View style={{ marginLeft: -s(4) }}>
                 <BarChart
                   data={stats.dailyBarData}
+                  scrollToEnd
+                  scrollAnimation
                   barWidth={s(28)}
                   spacing={s(16)}
                   initialSpacing={s(10)}
@@ -246,7 +248,7 @@ const AnalyticsScreen = () => {
                   hideRules={false}
                   rulesType="dashed"
                   rulesColor={colors.divider}
-                  yAxisLabelPrefix="$"
+                  yAxisLabelPrefix="₹"
                   yAxisTextStyle={{ color: colors.secondaryText, fontSize: s(10), fontWeight: '700' }}
                   isAnimated
                 />

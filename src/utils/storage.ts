@@ -7,6 +7,8 @@ import {
   updateDoc,
   query,
   orderBy,
+  getDoc,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -77,5 +79,33 @@ export const clearAllData = async (uid: string): Promise<void> => {
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
   } catch (e) {
     console.error('Failed to clear transactions', e);
+  }
+};
+
+
+export interface UserProfile {
+  displayName: string;
+  avatarColor: string;
+  savingsGoal: number;
+}
+
+const profileDoc = (uid: string) => doc(db, 'users', uid, 'profile', 'settings');
+
+export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
+  try {
+    const snap = await getDoc(profileDoc(uid));
+    return snap.exists() ? (snap.data() as UserProfile) : null;
+  } catch (e) {
+    console.error('Failed to fetch profile', e);
+    return null;
+  }
+};
+
+export const saveUserProfile = async (uid: string, profile: Partial<UserProfile>): Promise<void> => {
+  try {
+    await setDoc(profileDoc(uid), profile, { merge: true });
+  } catch (e) {
+    console.error('Failed to save profile', e);
+    throw e;
   }
 };

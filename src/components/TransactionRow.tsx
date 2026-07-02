@@ -113,7 +113,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
 
           <View style={styles.amountContainer}>
             <Text style={[styles.amount, { color: type === 'income' ? colors.income : colors.expense, fontSize: s(15) }]}>
-              {type === 'income' ? '+' : '-'}${Math.abs(amount).toFixed(2)}
+              {type === 'income' ? '+' : '-'}₹ {Math.abs(amount).toFixed(2)}
             </Text>
             <Text style={[styles.categoryBadge, { color: colors.secondaryText, fontSize: s(9) }]}>
               {category.toUpperCase()}

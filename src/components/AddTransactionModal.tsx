@@ -9,15 +9,29 @@ import {
   KeyboardAvoidingView, 
   Platform,
   TouchableWithoutFeedback,
-  ScrollView
+  ScrollView,
+  Alert
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { useTransactions } from '../context/TransactionContext';
 import { useResponsive } from '../hooks/useResponsive';
 import CategoryPicker, { CATEGORIES } from '../components/CategoryPicker';import { Transaction } from '../utils/storage';
+import { useAuth } from '../context/AuthContext';
+import { useBudgets } from '../context/BudgetContext';
+import { useTransactions } from '../context/TransactionContext';
+import { checkAndSetWarningFlag } from '../utils/budgetStorage';
 import dayjs from 'dayjs';
+
+import {
+  checkAndAddBudgetWarning,
+  addHighSpendingNotification,
+  addSavingsMilestoneNotification,
+  addIncomeCreditedNotification,
+  addMonthEndSummaryNotification,
+} from '../utils/notificationStorage';
+
+
 
 interface AddTransactionModalProps {
   visible: boolean;
@@ -27,8 +41,11 @@ interface AddTransactionModalProps {
 
 const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ visible, onClose, onSuccess }) => {
   const { colors, isDark } = useTheme();
-  const { addTransaction } = useTransactions();
+  const { addTransaction, transactions } = useTransactions();
   const { s, wp, hp } = useResponsive();
+  const { uid } = useAuth();
+  const { budgets } = useBudgets();
+ 
   
   const { control, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
     defaultValues: {
@@ -42,29 +59,190 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ visible, onCl
 
   const activeType = watch('type');
   const activeCategory = watch('category');
+  const HIGH_SPENDING_THRESHOLD = 5000;
+  const SAVINGS_MILESTONES = [25, 50, 75];
 
-  const onSubmit = async (data: any) => {
-    try {
-     const selectedCategory = CATEGORIES.find(c => c.id === data.category) || CATEGORIES[CATEGORIES.length - 1];
+  // Helper: Get current month's income & expense totals
+const getMonthTotals = (allTransactions: Transaction[]) => {
+  const currentMonth = dayjs().format('YYYY-MM');
+  let income = 0;
+  let expense = 0;
 
-      const newTx: Omit<Transaction, 'id'> = {
-        name: data.name,
-        amount: parseFloat(data.amount),
-        type: data.type,
-        category: data.category,
-        date: data.date,
-        icon: selectedCategory.icon,
-        iconColor: selectedCategory.color,
-      };
-
-      await addTransaction(newTx);
-      reset();
-      onSuccess();
-      onClose();
-    } catch (error) {
-      console.error('Form Submission Failed', error);
+  allTransactions.forEach((tx) => {
+    if (dayjs(tx.date).format('YYYY-MM') === currentMonth) {
+      if (tx.type === 'income') income += tx.amount;
+      else expense += tx.amount;
     }
-  };
+  });
+
+  return { income, expense };
+};
+
+// Helper: Check savings milestones and write notification
+const checkAndNotifySavingsMilestone = async (
+  uid: string,
+  allTransactions: Transaction[],
+  newTx: Omit<Transaction, 'id'>
+) => {
+  const { income, expense } = getMonthTotals(allTransactions);
+  
+  // Include the new transaction in the calculation
+  const finalIncome = newTx.type === 'income' ? income + newTx.amount : income;
+  const finalExpense = newTx.type === 'expense' ? expense + newTx.amount : expense;
+
+  if (finalIncome <= 0) return;
+
+  const savingsRate = ((finalIncome - finalExpense) / finalIncome) * 100;
+  const month = dayjs().format('YYYY-MM');
+
+  // Check milestones in descending order (fire highest one only)
+  for (const milestone of [...SAVINGS_MILESTONES].reverse()) {
+    if (savingsRate >= milestone) {
+      const flagKey = `savings_${milestone}_${month}`;
+      const shouldNotify = await checkAndSetWarningFlag(uid, flagKey);
+      if (shouldNotify) {
+        await addSavingsMilestoneNotification(uid, savingsRate);
+      }
+      break; // Only fire the highest milestone
+    }
+  }
+};
+
+const onSubmit = async (data: any) => {
+  try {
+    const selectedCategory = CATEGORIES.find((c) => c.id === data.category) || CATEGORIES[CATEGORIES.length - 1];
+
+    const newTx: Omit<Transaction, 'id'> = {
+      name: data.name,
+      amount: parseFloat(data.amount),
+      type: data.type,
+      category: data.category,
+      date: data.date,
+      icon: selectedCategory.icon,
+      iconColor: selectedCategory.color,
+    };
+
+    await addTransaction(newTx);
+    reset();
+    onSuccess();
+    onClose();
+
+    // ═══════════════════════════════════════════════════════════════
+    // SMART NOTIFICATIONS — triggered after transaction is saved
+    // ═══════════════════════════════════════════════════════════════
+    if (uid) {
+      
+      // 1️⃣ INCOME CREDITED notification
+      if (newTx.type === 'income') {
+        await addIncomeCreditedNotification(uid, newTx.name, newTx.amount);
+      }
+
+      // 2️⃣ HIGH SPENDING alert (single expense > ₹5000)
+      if (newTx.type === 'expense' && newTx.amount > HIGH_SPENDING_THRESHOLD) {
+        await addHighSpendingNotification(uid, newTx.name, newTx.amount, newTx.category);
+      }
+
+      // 3️⃣ BUDGET WARNINGS (existing logic + Firestore write)
+      if (newTx.type === 'expense') {
+        const budget = budgets.find((b) => b.categoryId === newTx.category);
+        if (budget) {
+          const month = dayjs().format('YYYY-MM');
+          const currentSpent =
+            transactions
+              .filter(
+                (tx) =>
+                  tx.type === 'expense' &&
+                  tx.category === newTx.category &&
+                  dayjs(tx.date).isSame(dayjs(), 'month')
+              )
+              .reduce((sum, tx) => sum + tx.amount, 0) + newTx.amount;
+
+          const percentage = (currentSpent / budget.limitAmount) * 100;
+
+          if (percentage >= 100) {
+            const flagKey = `exceeded_${newTx.category}_${month}`;
+            const shouldWarn = await checkAndSetWarningFlag(uid, flagKey);
+            if (shouldWarn) {
+              Alert.alert(
+                '🚨 Budget Exceeded!',
+                `You've exceeded your ${newTx.category} budget for this month!`
+              );
+              // 🔥 NEW: Write to Firestore notifications
+              await checkAndAddBudgetWarning(uid, newTx.category, percentage, month);
+            }
+          } else if (percentage >= 80) {
+            const flagKey = `warn80_${newTx.category}_${month}`;
+            const shouldWarn = await checkAndSetWarningFlag(uid, flagKey);
+            if (shouldWarn) {
+              Alert.alert(
+                '⚠️ Budget Warning',
+                `You've used ${Math.round(percentage)}% of your ${newTx.category} budget this month.`
+              );
+              // 🔥 NEW: Write to Firestore notifications
+              await checkAndAddBudgetWarning(uid, newTx.category, percentage, month);
+            }
+          }
+        }
+      }
+
+      // 4️⃣ SAVINGS MILESTONE check
+      await checkAndNotifySavingsMilestone(uid, transactions, newTx);
+
+      // 5️⃣ MONTH-END SUMMARY (only on last day of month or first day of new month)
+      const today = dayjs();
+      const isLastDayOfMonth = today.isSame(today.endOf('month'), 'day');
+      const isFirstDayOfMonth = today.date() === 1;
+
+      if (isLastDayOfMonth || isFirstDayOfMonth) {
+        const targetMonth = isFirstDayOfMonth
+          ? today.subtract(1, 'month').format('YYYY-MM')
+          : today.format('YYYY-MM');
+
+        const flagKey = `month_end_summary_${targetMonth}`;
+        const shouldSend = await checkAndSetWarningFlag(uid, flagKey);
+
+        if (shouldSend) {
+          const monthTxs = transactions.filter(
+            (tx) => dayjs(tx.date).format('YYYY-MM') === targetMonth
+          );
+          const totalIncome = monthTxs
+            .filter((tx) => tx.type === 'income')
+            .reduce((sum, tx) => sum + tx.amount, 0);
+          const totalExpense = monthTxs
+            .filter((tx) => tx.type === 'expense')
+            .reduce((sum, tx) => sum + tx.amount, 0);
+
+          // Find top spending category
+          const catTotals: Record<string, number> = {};
+          monthTxs
+            .filter((tx) => tx.type === 'expense')
+            .forEach((tx) => {
+              catTotals[tx.category] = (catTotals[tx.category] || 0) + tx.amount;
+            });
+
+          let topCategory = 'None';
+          let topAmount = 0;
+          Object.entries(catTotals).forEach(([cat, amt]) => {
+            if (amt > topAmount) {
+              topCategory = cat;
+              topAmount = amt;
+            }
+          });
+
+          await addMonthEndSummaryNotification(
+            uid,
+            targetMonth,
+            totalIncome,
+            totalExpense,
+            topCategory
+          );
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Form Submission Failed', error);
+  }
+};
 
   return (
     <Modal
@@ -141,7 +319,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ visible, onCl
                   rules={{ required: 'Amount is required', pattern: { value: /^\d+(\.\d{1,2})?$/, message: 'Invalid amount' } }}
                   render={({ field: { onChange, value } }) => (
                     <View style={styles.amountInputContainer}>
-                      <Text style={[styles.currency, { color: colors.text, fontSize: s(32) }]}>$</Text>
+                      <Text style={[styles.currency, { color: colors.text, fontSize: s(32) }]}>₹</Text>
                       <TextInput
                         style={[styles.amountInput, { color: colors.text, fontSize: s(40) }]}
                         keyboardType="decimal-pad"

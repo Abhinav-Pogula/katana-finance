@@ -54,7 +54,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, amount, type, onPress 
       <View style={[styles.textContainer, { marginLeft: s(12) }]}>
         <Text style={[styles.title, { color: colors.secondaryText, fontSize: s(10) }]}>{title}</Text>
         <Text style={[styles.amount, { color: colors.text, fontSize: s(16) }]}>
-          ${Math.abs(amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          ₹{Math.abs(amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
         </Text>
       </View>
     </TouchableOpacity>

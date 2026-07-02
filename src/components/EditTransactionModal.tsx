@@ -143,7 +143,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ visible, tr
               <View style={{ marginBottom: s(20) }}>
                 <Text style={[styles.label, { color: colors.secondaryText, fontSize: s(12), marginBottom: s(8) }]}>Amount</Text>
                 <View style={styles.amountRow}>
-                  <Text style={[styles.currency, { color: colors.text, fontSize: s(32) }]}>$</Text>
+                  <Text style={[styles.currency, { color: colors.text, fontSize: s(32) }]}>₹</Text>
                   <TextInput
                     style={[styles.amountInput, { color: colors.text, fontSize: s(40) }]}
                     keyboardType="decimal-pad"

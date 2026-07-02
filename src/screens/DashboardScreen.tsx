@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -9,7 +9,6 @@ import {
   Image,
   Modal
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -20,72 +19,39 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNotifications } from '../context/NotificationContext';
+import { getUserProfile } from '../utils/storage';
+
 
 // Components
 import TransactionRow from '../components/TransactionRow';
 import AddTransactionModal from '../components/AddTransactionModal';
 
-interface DummyNotification {
-  id: string;
-  title: string;
-  subtitle: string;
-  time: string;
-  read: boolean;
-}
-
-const DUMMY_NOTIFS: DummyNotification[] = [
-  { id: '4', title: 'Unusual spending detected', subtitle: 'Your food spending is 40% higher than last month.', time: '12 mins ago', read: false },
-  { id: '5', title: 'Salary Credited', subtitle: 'Your account was credited with $4,500.00.', time: '1 hour ago', read: false },
-  { id: '6', title: 'Auto-savings triggered', subtitle: '$200 has been securely moved to your vault.', time: '1 hour ago', read: false },
-  { id: '1', title: 'Monthly budget limit reached', subtitle: 'You have spent 100% of your budget for this month.', time: '2 hours ago', read: false },
-  { id: '2', title: 'New transaction added', subtitle: 'Your recent purchase at Starbucks was recorded.', time: '5 hours ago', read: false },
-  { id: '3', title: 'Savings goal 80% complete', subtitle: 'You are almost there!', time: '1 day ago', read: false }
-];
 
 const DashboardScreen = () => {
   const { colors, isDark } = useTheme();
   const { transactions, refreshTransactions } = useTransactions();
-  const { userName } = useAuth();
-  const navigation = useNavigation<any>();
+  const { userName, uid } = useAuth();  const navigation = useNavigation<any>();
   const { s, wp, hp } = useResponsive();
   const insets = useSafeAreaInsets();
 
   const [isModalVisible, setModalVisible] = React.useState(false);
-  const [notifications, setNotifications] = React.useState<DummyNotification[]>([]);
+
+  const [savingsGoal, setSavingsGoal] = useState(10000);
+
+useEffect(() => {
+  const loadGoal = async () => {
+    if (!uid) return;
+    const profile = await getUserProfile(uid);
+    if (profile?.savingsGoal) setSavingsGoal(profile.savingsGoal);
+  };
+  loadGoal();
+}, [uid]);
+  
   const [showNotifications, setShowNotifications] = React.useState(false);
 
-  React.useEffect(() => {
-    const loadNotifs = async () => {
-      try {
-        const stored = await AsyncStorage.getItem('dummy_notifs');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          const existingIds = new Set(parsed.map((n: DummyNotification) => n.id));
-          const newNotifs = DUMMY_NOTIFS.filter(n => !existingIds.has(n.id));
-          
-          if (newNotifs.length > 0) {
-            const merged = [...newNotifs, ...parsed];
-            setNotifications(merged);
-            await AsyncStorage.setItem('dummy_notifs', JSON.stringify(merged));
-          } else {
-            setNotifications(parsed);
-          }
-        } else {
-          setNotifications(DUMMY_NOTIFS);
-          await AsyncStorage.setItem('dummy_notifs', JSON.stringify(DUMMY_NOTIFS));
-        }
-      } catch (e) {}
-    };
-    loadNotifs();
-  }, []);
-
-  const markAsRead = async (id: string) => {
-    const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n);
-    setNotifications(updated);
-    await AsyncStorage.setItem('dummy_notifs', JSON.stringify(updated));
-  };
-
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // ✅ REAL notifications from Firestore
+  const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification, clearAll } = useNotifications();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -114,7 +80,7 @@ const DashboardScreen = () => {
     : 0;
 
   // Goal progress = % toward a $10,000 savings goal based on current balance
-  const SAVINGS_GOAL = 10000;
+  const SAVINGS_GOAL = savingsGoal;
   const goalProgress = Math.min(100, Math.max(0, Math.round((Math.max(0, balance) / SAVINGS_GOAL) * 100)));
 
   return { balance, savingsRate, goalProgress };
@@ -194,7 +160,7 @@ const DashboardScreen = () => {
             <BlurView intensity={70} tint={isDark ? 'dark' : 'light'} style={[styles.balanceCardBlur, { paddingVertical: s(32), paddingHorizontal: s(20) }]}>
               <Text style={[styles.balanceTitle, { color: colors.secondaryText, fontSize: s(11) }]}>TOTAL BALANCE</Text>
               <Text style={[styles.balanceAmount, { color: colors.text, fontSize: s(42) }]}>
-                ${stats.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                ₹{stats.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </Text>
               
               <View style={styles.actionButtonsRow}>
@@ -259,6 +225,33 @@ const DashboardScreen = () => {
               </View>
             </View>
 
+            {/* Budget Limits Button */}
+              <TouchableOpacity
+                style={[
+                  styles.budgetButton,
+                  {
+                    backgroundColor: isDark ? '#1C1C1C' : '#FFFFFF',
+                    borderColor: colors.divider,
+                    borderRadius: s(20),
+                    marginTop: s(12),
+                    paddingVertical: s(18),
+                    paddingHorizontal: s(20),
+                  }
+                ]}
+                onPress={() => navigation.navigate('BudgetLimits')}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={[{ backgroundColor: colors.accent + '20', borderRadius: s(10), padding: s(8), marginRight: s(14) }]}>
+                    <Ionicons name="pie-chart-outline" size={s(22)} color={colors.accent} />
+                  </View>
+    <View style={{ flex: 1 }}>
+      <Text style={[{ color: colors.text, fontSize: s(15), fontWeight: '700' }]}>Budget Limits</Text>
+      <Text style={[{ color: colors.secondaryText, fontSize: s(12) }]}>Set monthly spending limits per category</Text>
+    </View>
+    <Ionicons name="chevron-forward" size={s(18)} color={colors.secondaryText} />
+  </View>
+</TouchableOpacity>
+
           <View style={{ height: s(150) }} />
         </ScrollView>
       </View>
@@ -269,31 +262,89 @@ const DashboardScreen = () => {
         onSuccess={() => refreshTransactions()}
       />
 
-      <Modal visible={showNotifications} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowNotifications(false)}>
-          <View style={[styles.notificationCard, { backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF', borderColor: colors.divider }]}>
-            <Text style={[styles.notificationHeader, { color: colors.text }]}>Notifications</Text>
-            {notifications.length === 0 ? (
-              <Text style={{ color: colors.secondaryText, padding: 16 }}>No notifications</Text>
-            ) : (
-              notifications.map((n) => (
-                <TouchableOpacity 
-                  key={n.id} 
-                  style={[styles.notificationItem, !n.read && { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }]} 
-                  onPress={() => markAsRead(n.id)}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.notificationTitle, { color: colors.text }]}>{n.title}</Text>
-                    <Text style={[styles.notificationSubtitle, { color: colors.secondaryText }]}>{n.subtitle}</Text>
-                    <Text style={[styles.notificationTime, { color: colors.accent }]}>{n.time}</Text>
-                  </View>
-                  {!n.read && <View style={styles.unreadDot} />}
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      {/* ✅ REAL Notification Modal */}
+<Modal visible={showNotifications} transparent animationType="fade">
+  <TouchableOpacity 
+    style={styles.modalOverlay} 
+    activeOpacity={1} 
+    onPress={() => setShowNotifications(false)}
+  >
+    <View style={[styles.notificationCard, { backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF', borderColor: colors.divider }]}>
+      
+      {/* Header */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
+        <Text style={[styles.notificationHeader, { color: colors.text }]}>Notifications</Text>
+        {notifications.length > 0 && (
+          <TouchableOpacity onPress={clearAll}>
+            <Text style={{ color: '#FF3B30', fontSize: 12, fontWeight: '600' }}>Clear all</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Notification List */}
+      {notifications.length === 0 ? (
+        <View style={{ padding: 24, alignItems: 'center' }}>
+          <Ionicons name="notifications-off-outline" size={40} color={colors.secondaryText} />
+          <Text style={{ color: colors.secondaryText, marginTop: 8, fontSize: 13 }}>No notifications yet</Text>
+        </View>
+      ) : (
+        notifications.map((n) => (
+          <TouchableOpacity 
+            key={n.id} 
+            style={[
+              styles.notificationItem, 
+              !n.read && { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }
+            ]} 
+            onPress={() => markAsRead(n.id)}
+          >
+            {/* Icon based on notification type */}
+            <View style={{ marginRight: 12, marginTop: 2 }}>
+              <Ionicons 
+                name={
+                  n.type === 'budget_exceeded' ? 'alert-circle' :
+                  n.type === 'budget_warning' ? 'warning' :
+                  n.type === 'income_credited' ? 'cash' :
+                  n.type === 'high_spending' ? 'trending-up' :
+                  n.type === 'savings_milestone' ? 'trophy' :
+                  n.type === 'weekly_report' ? 'bar-chart' :
+                  n.type === 'month_end_summary' ? 'calendar' :
+                  'notifications'
+                } 
+                size={20} 
+                color={
+                  n.type === 'budget_exceeded' ? '#E74C3C' :
+                  n.type === 'budget_warning' ? '#F39C12' :
+                  n.type === 'income_credited' ? '#27AE60' :
+                  n.type === 'high_spending' ? '#E67E22' :
+                  n.type === 'savings_milestone' ? '#9B59B6' :
+                  '#3498DB'
+                } 
+              />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.notificationTitle, { color: colors.text }]}>{n.title}</Text>
+              <Text style={[styles.notificationSubtitle, { color: colors.secondaryText }]}>{n.subtitle}</Text>
+              <Text style={[styles.notificationTime, { color: colors.accent }]}>
+                {new Date(n.createdAt).toLocaleDateString()} {new Date(n.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              </Text>
+            </View>
+
+            {!n.read && <View style={styles.unreadDot} />}
+            
+            {/* Delete button */}
+            <TouchableOpacity 
+              onPress={() => removeNotification(n.id)} 
+              style={{ padding: 4, marginLeft: 8 }}
+            >
+              <Ionicons name="trash-outline" size={16} color={colors.secondaryText} />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        ))
+      )}
+    </View>
+  </TouchableOpacity>
+</Modal>
     </View>
   );
 };
@@ -309,6 +360,17 @@ const styles = StyleSheet.create({
     right: 0,
     width: '100%',
   },
+  
+  budgetButton: {
+      borderWidth: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+
+
   backgroundImage: {
     width: '100%',
     height: '100%',

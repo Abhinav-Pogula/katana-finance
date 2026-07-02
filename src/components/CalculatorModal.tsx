@@ -155,16 +155,15 @@ const CalculatorModal: React.FC<Props> = ({ visible, onClose }) => {
             <Button label="+" type="operator" />
           </View>
           <View style={styles.row}>
-            <Button label="1" />
-            <Button label="2" />
-            <Button label="3" />
-            <Button label="=" type="accent" />
-          </View>
-          <View style={styles.row}>
-            <Button label="0" flex={2} />
-            <Button label="." />
-            <Button label="=" type="accent" />
-          </View>
+          <Button label="1" />
+          <Button label="2" />
+          <Button label="3" />
+        </View>
+        <View style={styles.row}>
+          <Button label="0" flex={2} />
+          <Button label="." />
+          <Button label="=" type="accent" />
+        </View>
         </View>
       </View>
     </Modal>
