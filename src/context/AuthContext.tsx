@@ -8,9 +8,16 @@ import {
   linkWithCredential,
   EmailAuthProvider,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithCredential,
   User,
 } from 'firebase/auth';
 import { auth } from '../utils/firebase';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+import { Alert } from 'react-native';
+
+WebBrowser.maybeCompleteAuthSession();
 
 interface AuthContextType {
   userName: string;
@@ -21,6 +28,7 @@ interface AuthContextType {
   logout: () => void;
   signUpWithEmail: (name: string, email: string, password: string) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +39,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [uid, setUid] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
+  const [request, response, promptAsync] = Google.useAuthRequest({
+  webClientId: '671647247985-1akbphsib0p8d7ibu5gompfnr7ga0eq6.apps.googleusercontent.com',
+  androidClientId: '671647247985-t4bm0h4d19s1qe0178f7biaod6jfa3dr.apps.googleusercontent.com',
+});
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
       if (user) {
@@ -38,7 +51,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAuthReady(true);
         if (!user.isAnonymous) {
           setIsAuthenticated(true);
-          // Restore displayName from Firebase Auth profile on every app restart
           if (user.displayName) {
             setUserName(user.displayName);
           } else if (user.email) {
@@ -54,6 +66,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      const credential = GoogleAuthProvider.credential(id_token);
+      signInWithCredential(auth, credential)
+        .then((result) => {
+          const user = result.user;
+          setUid(user.uid);
+          const name = user.displayName || user.email?.split('@')[0] || 'Katana User';
+          setUserName(name);
+          setIsAuthenticated(true);
+          setAuthReady(true);
+        })
+        .catch((err) => console.error('Google sign-in failed:', err));
+    }
+  }, [response]);
+
   const signUpWithEmail = async (name: string, email: string, password: string) => {
     const current = auth.currentUser;
     let firebaseUser;
@@ -67,7 +96,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       firebaseUser = result.user;
     }
 
-    // Persist the display name to Firebase Auth profile
     const displayName = name.trim() || email.split('@')[0];
     await updateProfile(firebaseUser, { displayName });
 
@@ -79,11 +107,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithEmail = async (email: string, password: string) => {
     const result = await signInWithEmailAndPassword(auth, email, password);
     setUid(result.user.uid);
-    // Use saved displayName if available, otherwise fall back to email prefix
     const name = result.user.displayName || email.split('@')[0];
     setUserName(name);
     setIsAuthenticated(true);
   };
+
+ const signInWithGoogle = async () => {
+  Alert.alert(
+    'Google Sign-In',
+    'Google sign-in is available in the full app build. Please use email/password sign-in for now.',
+    [{ text: 'OK' }]
+  );
+};
 
   const login = (name: string) => {
     setUserName(name.trim() || 'Katana User');
@@ -101,7 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <AuthContext.Provider value={{
       userName, isAuthenticated, uid, authReady,
-      login, logout, signUpWithEmail, signInWithEmail,
+      login, logout, signUpWithEmail, signInWithEmail, signInWithGoogle,
     }}>
       {children}
     </AuthContext.Provider>

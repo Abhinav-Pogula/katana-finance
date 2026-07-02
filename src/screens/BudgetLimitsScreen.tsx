@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   StyleSheet, View, Text, ScrollView, TouchableOpacity,
-  Modal, TextInput, Alert, ActivityIndicator,
+  Modal, TextInput, Alert, ActivityIndicator,  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import { useResponsive } from '../hooks/useResponsive';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { EXPENSE_CATEGORIES } from '../components/CategoryPicker';
 import CrumpledPaper from '../components/CrumpledPaper';
+
 import dayjs from 'dayjs';
 
 const BudgetLimitsScreen = () => {
@@ -195,14 +196,19 @@ const BudgetLimitsScreen = () => {
       </SafeAreaView>
 
       {/* Set Budget Modal */}
-      <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalVisible(false)} />
+    <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalVisible(false)} />
+      
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ justifyContent: 'flex-end' }}
+      >
         <View style={[styles.sheet, {
           backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
           borderTopLeftRadius: s(32),
           borderTopRightRadius: s(32),
           padding: s(24),
-          paddingBottom: s(40),
+          paddingBottom: Platform.OS === 'ios' ? s(50) : s(40), // extra padding for home indicator
         }]}>
           <View style={[styles.handle, { backgroundColor: colors.divider, marginBottom: s(20) }]} />
 
@@ -254,7 +260,8 @@ const BudgetLimitsScreen = () => {
             </TouchableOpacity>
           )}
         </View>
-      </Modal>
+      </KeyboardAvoidingView>
+    </Modal>
     </CrumpledPaper>
   );
 };

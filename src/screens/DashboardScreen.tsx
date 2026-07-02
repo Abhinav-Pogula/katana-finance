@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Image,
+  Animated,
   Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,6 +37,7 @@ const DashboardScreen = () => {
   const insets = useSafeAreaInsets();
 
   const [isModalVisible, setModalVisible] = React.useState(false);
+  const [defaultTxType, setDefaultTxType] = React.useState<'income' | 'expense'>('expense');
 
   const [savingsGoal, setSavingsGoal] = useState(10000);
 
@@ -87,6 +89,28 @@ useEffect(() => {
 }, [transactions]);
 
   const recentTransactions = transactions.slice(0, 4);
+  
+  // Animated balance counter
+const [displayBalance, setDisplayBalance] = useState(0);
+const balanceAnim = useRef(new Animated.Value(0)).current;
+
+useEffect(() => {
+  // Animate from 0 to actual balance over 1.5 seconds
+  balanceAnim.setValue(0);
+  Animated.timing(balanceAnim, {
+    toValue: 1,
+    duration: 1500,
+    useNativeDriver: false,
+  }).start();
+}, [stats.balance]);
+
+useEffect(() => {
+  const listener = balanceAnim.addListener(({ value }) => {
+    const current = stats.balance * value;
+    setDisplayBalance(current);
+  });
+  return () => balanceAnim.removeListener(listener);
+}, [stats.balance, balanceAnim]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -159,32 +183,81 @@ useEffect(() => {
           <View style={[styles.balanceCardContainer, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)', borderRadius: s(30), marginBottom: s(32) }]}>
             <BlurView intensity={70} tint={isDark ? 'dark' : 'light'} style={[styles.balanceCardBlur, { paddingVertical: s(32), paddingHorizontal: s(20) }]}>
               <Text style={[styles.balanceTitle, { color: colors.secondaryText, fontSize: s(11) }]}>TOTAL BALANCE</Text>
-              <Text style={[styles.balanceAmount, { color: colors.text, fontSize: s(42) }]}>
-                ₹{stats.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </Text>
+
+                {/* Cool Balance Display */}
+                <View style={{ alignItems: 'center', marginBottom: s(36) }}>
+
+                  {/* Balance amount with gradient-like effect */}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                    <Text style={{
+                    color: stats.balance >= 0 ? '#7B2FBE' : '#E74C3C',
+                    fontSize: s(24),
+                    fontWeight: '700',
+                    marginTop: s(8),
+                    marginRight: s(4),
+                    opacity: 0.8,
+                    textShadowColor: stats.balance >= 0 ? 'rgba(216, 205, 44, 0.6)' : 'rgba(231, 76, 60, 0.6)',
+                    textShadowOffset: { width: 0, height: 2 },
+                    textShadowRadius: 8,
+                  }}>
+                    ₹
+                  </Text>
+                    <Text style={{
+                    color: colors.text,
+                    fontSize: s(48),
+                    fontWeight: '900',
+                    letterSpacing: -1,
+                    textShadowColor: stats.balance >= 0 ? 'rgba(216, 205, 44, 0.6)' : 'rgba(231, 76, 60, 0.6)',
+                    textShadowOffset: { width: 0, height: 3 },
+                    textShadowRadius: 15,
+                  }}>
+                    {Math.abs(displayBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </Text>
+                  </View>
+  
+  {/* Balance status label */}
+  <Text style={{
+    color: stats.balance >= 0 ? '#27AE6080' : '#E74C3C80',
+    fontSize: s(11),
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginTop: s(6),
+    textTransform: 'uppercase',
+  }}>
+    {stats.balance >= 0 ? 'In Good Standing' : 'Over Budget'}
+  </Text>
+</View>
               
               <View style={styles.actionButtonsRow}>
-                <View style={styles.actionColumn}>
-                  <TouchableOpacity style={[styles.actionButtonLight, { width: s(56), height: s(56), borderRadius: s(28) }]} onPress={() => navigation.navigate('Budget', { filter: 'Income' })}>
-                    <Ionicons name="arrow-up" size={s(20)} color="#8D4C3A" />
-                  </TouchableOpacity>
-                  <Text style={[styles.actionLabel, { color: colors.text, fontSize: s(10) }]}>INCOME</Text>
-                </View>
-
-                <View style={styles.actionColumn}>
-                  <TouchableOpacity style={[styles.actionButtonLight, { width: s(56), height: s(56), borderRadius: s(28) }]} onPress={() => navigation.navigate('Budget', { filter: 'Expense' })}>
-                    <Ionicons name="arrow-down" size={s(20)} color="#8D4C3A" />
-                  </TouchableOpacity>
-                  <Text style={[styles.actionLabel, { color: colors.text, fontSize: s(10) }]}>SPENT</Text>
-                </View>
-
-                <View style={styles.actionColumn}>
-                  <TouchableOpacity style={[styles.actionButtonDark, { width: s(64), height: s(64), borderRadius: s(32) }]} onPress={() => setModalVisible(true)}>
-                    <Ionicons name="add" size={s(28)} color="#FFF" />
-                  </TouchableOpacity>
-                  <Text style={[styles.actionLabel, { color: colors.text, fontSize: s(10) }]}>ADD</Text>
-                </View>
+              {/* INCOME — opens transaction modal with Income tab */}
+              <View style={styles.actionColumn}>
+                <TouchableOpacity 
+                  style={[styles.actionButtonLight, { width: s(56), height: s(56), borderRadius: s(28) }]} 
+                  onPress={() => {
+                    setDefaultTxType('income');
+                    setModalVisible(true);
+                  }}
+                >
+                  <Ionicons name="arrow-up" size={s(20)} color="#27AE60" />
+                </TouchableOpacity>
+                <Text style={[styles.actionLabel, { color: colors.text, fontSize: s(10) }]}>INCOME</Text>
               </View>
+
+              {/* SPENT — opens transaction modal with Expense tab */}
+              <View style={styles.actionColumn}>
+                <TouchableOpacity 
+                  style={[styles.actionButtonLight, { width: s(56), height: s(56), borderRadius: s(28) }]} 
+                  onPress={() => {
+                    setDefaultTxType('expense');
+                    setModalVisible(true);
+                  }}
+                >
+                  <Ionicons name="arrow-down" size={s(20)} color="#E74C3C" />
+                </TouchableOpacity>
+                <Text style={[styles.actionLabel, { color: colors.text, fontSize: s(10) }]}>SPENT</Text>
+              </View>
+            </View>
+
             </BlurView>
           </View>
 
@@ -257,10 +330,11 @@ useEffect(() => {
       </View>
 
       <AddTransactionModal 
-        visible={isModalVisible} 
-        onClose={() => setModalVisible(false)} 
-        onSuccess={() => refreshTransactions()}
-      />
+      visible={isModalVisible} 
+      onClose={() => setModalVisible(false)} 
+      onSuccess={() => refreshTransactions()}
+      defaultType={defaultTxType}
+    />
 
       {/* ✅ REAL Notification Modal */}
 <Modal visible={showNotifications} transparent animationType="fade">
@@ -416,11 +490,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginBottom: 8,
   },
-  balanceAmount: {
-    fontWeight: '900',
-    letterSpacing: -1.5,
-    marginBottom: 36,
-  },
+
   actionButtonsRow: {
     flexDirection: 'row',
     width: '100%',

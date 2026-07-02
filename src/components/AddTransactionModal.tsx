@@ -37,9 +37,10 @@ interface AddTransactionModalProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  defaultType?: 'income' | 'expense';  // ← THIS LINE MUST EXIST
 }
 
-const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ visible, onClose, onSuccess }) => {
+const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ visible, onClose, onSuccess, defaultType = 'expense' }) => {
   const { colors, isDark } = useTheme();
   const { addTransaction, transactions } = useTransactions();
   const { s, wp, hp } = useResponsive();
@@ -47,15 +48,22 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ visible, onCl
   const { budgets } = useBudgets();
  
   
-  const { control, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
+  const { control, handleSubmit, reset, watch, setValue, formState: { errors } } = 
+  useForm({
     defaultValues: {
-      type: 'expense' as 'income' | 'expense',
+      type: defaultType,
       amount: '',
       name: '',
       category: 'Food',
       date: dayjs().format('YYYY-MM-DD'),
     }
   });
+
+  React.useEffect(() => {
+  if (visible) {
+    setValue('type', defaultType);
+  }
+}, [visible, defaultType, setValue]);
 
   const activeType = watch('type');
   const activeCategory = watch('category');

@@ -1,5 +1,6 @@
 {
   "expo": {
+    "scheme": "katana",
     "name": "Katana Finance",
     "slug": "katana",
     "version": "1.0.0",
@@ -11,14 +12,20 @@
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0D0D0D"
+      
     },
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "package": "com.katanafinance.app",
       "versionCode": 1,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0D0D0D"
@@ -33,6 +40,9 @@
       "eas": {
         "projectId": "85dfa671-a01e-494b-91c2-fe8ca14ff4e4"
       }
-    }
+    },
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
 }
