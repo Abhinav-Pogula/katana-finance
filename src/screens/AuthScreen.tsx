@@ -22,7 +22,7 @@ const AuthScreen: React.FC = () => {
   const { colors, toggleTheme } = useTheme();
   const { s, wp, hp } = useResponsive();
   const insets = useSafeAreaInsets();
-  const { signUpWithEmail, signInWithEmail, signInWithGoogle } = useAuth();
+  const { signUpWithEmail, signInWithEmail } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   const [loading, setLoading] = useState(false);
@@ -206,24 +206,6 @@ const AuthScreen: React.FC = () => {
 
           </View>
 
-           {/* Divider */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: s(20), marginBottom: s(16) }}>
-              <View style={{ flex: 1, height: 1, backgroundColor: '#333' }} />
-              <Text style={{ color: '#666', marginHorizontal: s(12), fontSize: s(13) }}>or</Text>
-              <View style={{ flex: 1, height: 1, backgroundColor: '#333' }} />
-            </View>
-
-            {/* Google Sign In Button */}
-            <TouchableOpacity
-              style={[styles.googleButton, { borderRadius: s(100), paddingVertical: s(16), marginBottom: s(8) }]}
-              onPress={signInWithGoogle}
-              disabled={loading}
-            >
-              <Text style={[styles.googleButtonText, { fontSize: s(16) }]}>
-                🇬 Continue with Google
-              </Text>
-            </TouchableOpacity>   
-
           <View style={{ height: hp(5) }} />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -256,18 +238,6 @@ const styles = StyleSheet.create({
   forgotPasswordText: { color: '#888888', fontWeight: '600' },
   submitButton: { backgroundColor: '#FFFFFF', alignItems: 'center' },
   submitButtonText: { color: '#0D0D0D', fontWeight: '800' },
-  googleButton: {
-  backgroundColor: '#FFFFFF',
-  alignItems: 'center',
-  borderWidth: 1,
-  borderColor: '#333333',
-  flexDirection: 'row',
-  justifyContent: 'center',
-},
-googleButtonText: {
-  color: '#0D0D0D',
-  fontWeight: '700',
-},
 });
 
 export default AuthScreen;

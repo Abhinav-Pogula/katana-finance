@@ -196,7 +196,6 @@ useEffect(() => {
                     marginTop: s(8),
                     marginRight: s(4),
                     opacity: 0.8,
-                    textShadowColor: stats.balance >= 0 ? 'rgba(216, 205, 44, 0.6)' : 'rgba(231, 76, 60, 0.6)',
                     textShadowOffset: { width: 0, height: 2 },
                     textShadowRadius: 8,
                   }}>
@@ -207,7 +206,6 @@ useEffect(() => {
                     fontSize: s(48),
                     fontWeight: '900',
                     letterSpacing: -1,
-                    textShadowColor: stats.balance >= 0 ? 'rgba(216, 205, 44, 0.6)' : 'rgba(231, 76, 60, 0.6)',
                     textShadowOffset: { width: 0, height: 3 },
                     textShadowRadius: 15,
                   }}>
